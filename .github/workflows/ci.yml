@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+      - '.github/ISSUE_TEMPLATE/**'
+      - '.github/PULL_REQUEST_TEMPLATE.md'
+
+permissions:
+  contents: read
+
+jobs:
+  dotnet:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.x
+      - name: Restore
+        run: dotnet restore Codemap.slnx
+      - name: Build
+        run: dotnet build Codemap.slnx --no-restore --configuration Release
+      - name: Test
+        run: dotnet test --solution Codemap.slnx --no-build --configuration Release

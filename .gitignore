@@ -198,6 +198,24 @@ AutoTest.Net/
 
 # DocProject is a documentation generator add-in
 DocProject/buildhelp/
+
+# Local tool and editor configuration
+.mcp.json
+.idea/
+*.sln.iml
+.vscode/*.code-workspace
+
+# Local dependencies and coverage output
+node_modules/
+.npm/
+coverage/
+
+# Environment and operating-system files
+.env
+.env.*
+!.env.example
+.DS_Store
+Thumbs.db
 DocProject/Help/*.HxT
 DocProject/Help/*.HxC
 DocProject/Help/*.hhc

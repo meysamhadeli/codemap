@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Codemap.Core\Codemap.Core.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>codemap</ToolCommandName>
+    <PackageId>Codemap</PackageId>
+    <Version>0.1.0</Version>
+    <Authors>Codemap Contributors</Authors>
+    <Description>Package repositories into compact, AI-friendly output.</Description>
+    <PackageTags>ai;repository;source-code;developer-tool</PackageTags>
+  </PropertyGroup>
+
+</Project>
