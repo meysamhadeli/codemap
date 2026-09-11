@@ -1,5 +1,21 @@
 # codemap
 
+> **Repository context, compressed.** Package source code into deterministic, AI-friendly output from the command line or a reusable .NET library.
+
+[![.NET 10](https://img.shields.io/badge/.NET-10-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/download/dotnet/10.0) [![License](https://img.shields.io/badge/license-MIT-2ea44f?logo=opensourceinitiative&logoColor=white)](LICENSE)
+
+## Contents
+
+- [Install](#installation)
+- [Features](#features-what-codemap-provides)
+- [Quick start](#quick-start)
+- [Command reference](#command-reference)
+- [Configuration](#configuration)
+- [Advanced capabilities](#advanced-capabilities)
+- [C# library](#using-the-c-library)
+- [Development](#development)
+- [Troubleshooting](#troubleshooting)
+
 codemap is a .NET 10 command-line tool and reusable C# library for turning a repository into compact, AI-friendly output. It provides deterministic discovery, Git-aware filtering, token counting, Tree-sitter compression, DevSkim security scanning, and configurable output formats.
 
 ## Installation
@@ -14,26 +30,54 @@ Then run it from any directory with `codemap`.
 
 Running `codemap` without options scans the current directory. Use `--root` when your current directory contains protected system folders, for example `codemap --root C:\path\to\repository`.
 
+> [!TIP]
+> Start with `codemap --root . --format markdown --output repository.md` to create a shareable repository snapshot.
+
 ## Features: What codemap Provides
 
-- **AI-ready repository packaging**: combine selected source files into one readable artifact.
-- **Deterministic discovery**: files are processed in stable path order for repeatable output.
-- **Include and ignore rules**: filter by glob patterns and repository ignore files.
-- **Git awareness**: respect `.gitignore` and optionally include Git diffs and recent commits.
-- **Accurate token counts**: use GPT-4-compatible `cl100k_base` tokenization per file and for the complete output.
-- **Security filtering**: use the native .NET DevSkim rule engine; files with actionable findings are excluded and listed.
-- **Code compression**: use Tree-sitter to keep declarations and structural code while reducing context size.
-- **Content cleanup**: optionally remove comments, remove empty lines, or add line numbers.
-- **Output formats**: Markdown, XML, JSON, and plain text.
-- **Large-repository controls**: file-size limits, token budgets, and split output.
-- **Repository sources**: pack the current directory or clone a remote Git repository and branch.
-- **Developer workflow features**: watch a directory and report changes, or use the core library directly from another .NET application.
+| | Capability | What it does |
+| --- | --- | --- |
+| 📦 | AI-ready packaging | Combines selected source files into one readable artifact. |
+| 🧭 | Deterministic discovery | Processes files in stable path order for repeatable output. |
+| 🎯 | Include and ignore rules | Filters paths with globs, `.gitignore`, and `.ignore`. |
+| 🌿 | Git awareness | Includes diffs and recent commits when requested. |
+| 🔢 | Token counts | Reports GPT-4-compatible `cl100k_base` counts per file and overall. |
+| 🛡️ | Security filtering | Uses DevSkim and excludes files with actionable findings. |
+| 🗜️ | Code compression | Uses Tree-sitter to preserve declarations while reducing context size. |
+| 🧹 | Content cleanup | Removes comments or empty lines and can add line numbers. |
+| 📝 | Multiple formats | Writes Markdown, XML, JSON, or plain text. |
+| 📏 | Size controls | Supports file-size limits, token budgets, and split output. |
+| 🌐 | Repository sources | Packs a local directory or clones a remote Git repository. |
+| 👀 | Workflow support | Watches a directory for changes or exposes a reusable C# library. |
+
+## Quick Start
+
+### 1. Install
+
+```bash
+dotnet tool install --global Dotnet.Codemap
+```
+
+### 2. Pack a repository
+
+```bash
+codemap --root . --format markdown --output repository.md
+```
+
+### 3. Keep output within a model context window
+
+```bash
+codemap --root . --include "src/**/*.cs" --compress --token-budget 12000 --output compact-context.md
+```
+
+> [!NOTE]
+> Generated output is deterministic when the same source, options, and Git state are used.
 
 ## How to Run codemap
 
 codemap's main workflow is simple: choose a source directory, select an output format, and write the generated repository context to a file. The examples below focus on core commands.
 
-### Help
+### ❓ Help
 
 Use the built-in help whenever you need to check available commands and options:
 
@@ -41,7 +85,7 @@ Use the built-in help whenever you need to check available commands and options:
 codemap --help
 ```
 
-### Root
+### 📁 Root
 
 Pack the current directory into Markdown, which is convenient for sharing with an AI tool:
 
@@ -52,7 +96,7 @@ codemap \
 	--output repository.md
 ```
 
-### Include and Ignore
+### 🎯 Include and Ignore
 
 Use `--include` to select files and `--ignore` to remove paths from that selection:
 
@@ -67,7 +111,7 @@ codemap \
 
 codemap also reads `.gitignore` and `.ignore` automatically.
 
-### Compress
+### 🗜️ Compress
 
 Use compression and cleanup options when the full repository is too large for your model's context window:
 
@@ -85,7 +129,7 @@ codemap \
 
 `--compress` keeps important declarations such as classes, methods, interfaces, properties, and types while reducing implementation detail.
 
-### Security Check
+### 🛡️ Security Check
 
 Use DevSkim to exclude files with actionable security findings before they enter the generated context:
 
@@ -99,7 +143,7 @@ codemap \
 
 codemap reports excluded files in the terminal. Node.js and npm are not required.
 
-### Format
+### 📝 Format
 
 Use `--format` to choose the output that fits your workflow:
 
@@ -115,7 +159,7 @@ codemap --format xml --output repository.xml
 codemap --format plain --output repository.txt
 ```
 
-### Remote
+### 🌐 Remote
 
 codemap can clone a repository and pack a selected branch:
 
@@ -205,7 +249,11 @@ Configuration uses JSON. codemap automatically loads `codemap.json` or `codemap.
 
 Command-line values override configuration values. For list options such as `--include` and `--ignore`, the command-line value replaces the configured list.
 
-## Include and Ignore Rules
+## Advanced Capabilities
+
+The sections below explain behavior that is useful when tuning output for a larger repository or an automated workflow.
+
+### 🎯 Include and Ignore Rules
 
 codemap always skips these generated or repository directories:
 
@@ -241,13 +289,13 @@ src/**        everything under src
 *.md          Markdown files at any directory depth
 ```
 
-## Security Scanning
+### 🛡️ Security Scanning
 
 `--security-check` uses Microsoft DevSkim embedded rules. codemap scans the original UTF-8 source before compression or cleanup transformations. Files with actionable DevSkim findings are excluded from the packed result instead of causing the entire operation to fail.
 
 Excluded paths are reported on the console and exposed through the result model. Use this mode when creating context from repositories that may contain credentials, weak cryptography, or other known security patterns.
 
-## Code Compression
+### 🗜️ Code Compression
 
 `--compress` uses Tree-sitter grammars and keeps structural declarations such as classes, interfaces, functions, methods, properties, and types. It is useful when the full implementation is too large for an AI context but the public shape of the code should remain visible.
 
@@ -260,7 +308,7 @@ Ruby, PHP, Kotlin, HTML, CSS, JSON, Bash, Scala, Swift, TOML
 
 Unknown extensions and parser failures fall back to the original content. Compression is opt-in and should be disabled when exact implementation details are required.
 
-## Output Formats
+### 📝 Output Formats
 
 ### Markdown
 
@@ -278,13 +326,13 @@ JSON contains summary data, file records, excluded security paths, and optional 
 
 Plain text emits each file under a clear path separator. It is useful for tools that do not parse Markdown, XML, or JSON.
 
-## Token Counts and Limits
+### 🔢 Token Counts and Limits
 
 codemap uses the GPT-4-compatible `cl100k_base` tokenizer from `Microsoft.ML.Tokenizers`. Each packed file has a token count, and the final rendered output has an aggregate count.
 
 `--token-budget` validates the final rendered output. If the output is too large, codemap returns an error rather than silently producing an incomplete result. Use `--include`, `--ignore`, `--compress`, `--max-file-size`, or `--split-output` to control size.
 
-## Remote Repositories, Git Metadata, and Watch Mode
+### 🌐 Remote Repositories, Git Metadata, and Watch Mode
 
 Clone and pack a GitHub repository:
 
