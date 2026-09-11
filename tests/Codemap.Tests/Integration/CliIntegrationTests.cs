@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Xml.Linq;
 
 namespace Codemap.Tests;
 
@@ -76,6 +77,18 @@ public sealed class CliIntegrationTests
         result.StandardOutput.ShouldContain("Watching for changes.");
     }
 
+    [Fact]
+    public void Cli_ProjectFile_UsesUniquePackageIdForToolPublishing()
+    {
+        var projectPath = FindRepositoryFile("src", "Codemap.Cli", "Codemap.Cli.csproj");
+        var document = XDocument.Load(projectPath);
+        var propertyGroup = document.Root?.Element("PropertyGroup");
+
+        propertyGroup.ShouldNotBeNull();
+        propertyGroup.Element("PackageId")?.Value.ShouldBe("Meysamhadeli.Codemap");
+        propertyGroup.Element("ToolCommandName")?.Value.ShouldBe("codemap");
+    }
+
     private static async Task<CliResult> RunCliAsync(params string[] arguments)
     {
         var assemblyPath = Path.Combine(AppContext.BaseDirectory, "Codemap.Cli.dll");
@@ -144,6 +157,23 @@ public sealed class CliIntegrationTests
         {
             throw new InvalidOperationException(process.StandardError.ReadToEnd());
         }
+    }
+
+    private static string FindRepositoryFile(params string[] segments)
+    {
+        var directory = new DirectoryInfo(AppContext.BaseDirectory);
+        while (directory is not null)
+        {
+            var candidate = Path.Combine([directory.FullName, .. segments]);
+            if (File.Exists(candidate))
+            {
+                return candidate;
+            }
+
+            directory = directory.Parent;
+        }
+
+        throw new InvalidOperationException($"Unable to locate repository file: {Path.Combine(segments)}");
     }
 
     private sealed record CliResult(int ExitCode, string StandardOutput, string StandardError);

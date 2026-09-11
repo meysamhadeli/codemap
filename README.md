@@ -7,7 +7,7 @@ codemap is a .NET 10 command-line tool and reusable C# library for turning a rep
 codemap is distributed as a .NET tool. Install the published package globally with:
 
 ```bash
-dotnet tool install --global codemap
+dotnet tool install --global Meysamhadeli.Codemap
 ```
 
 Then run it from any directory with `codemap`.

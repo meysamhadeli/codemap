@@ -6,6 +6,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Ver
 
 ## Unreleased
 
+### Fixed
+
+- Changed the published .NET tool package ID to `Meysamhadeli.Codemap` so NuGet publishing does not collide with the existing third-party `Codemap` package.
+
 ### Added
 
 - Initial codemap core, CLI, output formats, filtering, transformations, and tests.
