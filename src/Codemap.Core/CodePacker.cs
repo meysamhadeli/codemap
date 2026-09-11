@@ -23,6 +23,7 @@ public sealed class CodePacker
         {
             RecurseSubdirectories = true,
             IgnoreInaccessible = true,
+            AttributesToSkip = FileAttributes.System,
             ReturnSpecialDirectories = false
         };
         foreach (var path in Directory.EnumerateFiles(root, "*", enumerationOptions).OrderBy(path => path, StringComparer.OrdinalIgnoreCase))
