@@ -19,7 +19,13 @@ public sealed class CodePacker
 
         var files = new List<PackedFile>();
         var sourcePaths = new List<string>();
-        foreach (var path in Directory.EnumerateFiles(root, "*", SearchOption.AllDirectories).OrderBy(path => path, StringComparer.OrdinalIgnoreCase))
+        var enumerationOptions = new EnumerationOptions
+        {
+            RecurseSubdirectories = true,
+            IgnoreInaccessible = true,
+            ReturnSpecialDirectories = false
+        };
+        foreach (var path in Directory.EnumerateFiles(root, "*", enumerationOptions).OrderBy(path => path, StringComparer.OrdinalIgnoreCase))
         {
             cancellationToken.ThrowIfCancellationRequested();
             var relativePath = Normalize(Path.GetRelativePath(root, path));

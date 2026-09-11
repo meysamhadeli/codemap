@@ -98,7 +98,7 @@ try
 	}
 	return 0;
 }
-catch (Exception exception) when (exception is IOException or InvalidOperationException or DirectoryNotFoundException or JsonException or FormatException)
+catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidOperationException or DirectoryNotFoundException or JsonException or FormatException)
 {
 	Console.Error.WriteLine($"codemap: {exception.Message}");
 	return 1;

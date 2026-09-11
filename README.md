@@ -7,10 +7,12 @@ codemap is a .NET 10 command-line tool and reusable C# library for turning a rep
 codemap is distributed as a .NET tool. Install the published package globally with:
 
 ```bash
-dotnet tool install --global codemap
+dotnet tool install --global Dotnet.Codemap
 ```
 
 Then run it from any directory with `codemap`.
+
+Running `codemap` without options scans the current directory. Use `--root` when your current directory contains protected system folders, for example `codemap --root C:\path\to\repository`.
 
 ## Features: What codemap Provides
 
