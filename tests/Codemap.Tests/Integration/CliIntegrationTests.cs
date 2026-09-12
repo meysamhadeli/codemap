@@ -15,6 +15,15 @@ public sealed class CliIntegrationTests
     }
 
     [Fact]
+    public async Task Cli_Version_ReturnsAssemblyVersion()
+    {
+        var result = await RunCliAsync("--version");
+
+        result.ExitCode.ShouldBe(0, result.StandardError);
+        result.StandardOutput.Trim().ShouldBe("1.0.0");
+    }
+
+    [Fact]
     public async Task Cli_PacksJsonOutput()
     {
         using var fixture = new TemporaryDirectory();

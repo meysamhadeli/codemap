@@ -128,6 +128,7 @@ public sealed class ExtendedFeatureTests
         var result = await new CodePacker().PackAsync(new PackOptions
         {
             RootDirectory = fixture.Path,
+            Format = OutputFormat.Xml,
             IncludeGitDiffs = true,
             IncludeGitLogs = true,
             GitLogCount = 1

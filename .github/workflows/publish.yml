@@ -29,8 +29,17 @@ jobs:
       - name: Restore
         run: dotnet restore Codemap.slnx
 
+      - name: Determine package version
+        shell: bash
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
+            version="${{ inputs.version }}"
+          fi
+          echo "PACKAGE_VERSION=$version" >> "$GITHUB_ENV"
+
       - name: Build
-        run: dotnet build Codemap.slnx --no-restore --configuration Release
+        run: dotnet build Codemap.slnx --no-restore --configuration Release -p:Version="$PACKAGE_VERSION"
 
       - name: Test
         run: dotnet test --solution Codemap.slnx --no-build --configuration Release
@@ -38,20 +47,15 @@ jobs:
       - name: Pack CLI tool
         shell: bash
         run: |
-          version="${GITHUB_REF_NAME#v}"
-          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
-            version="${{ inputs.version }}"
-          fi
-
           rm -rf ./artifacts/packages
           mkdir -p ./artifacts/packages
           dotnet pack src/Codemap.Cli/Codemap.Cli.csproj \
             --no-build \
             --configuration Release \
             --output ./artifacts/packages \
-            -p:PackageVersion="$version"
+            -p:PackageVersion="$PACKAGE_VERSION"
 
-          package="./artifacts/packages/Codemap.Cli.${version}.nupkg"
+          package="./artifacts/packages/Codemap.Cli.${PACKAGE_VERSION}.nupkg"
           test -f "$package"
           echo "PACKAGE_PATH=$package" >> "$GITHUB_ENV"
 

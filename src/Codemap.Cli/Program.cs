@@ -3,6 +3,17 @@ using Codemap.Cli;
 using System.Text.Json;
 
 var arguments = args.ToList();
+if (arguments.Contains("--version", StringComparer.Ordinal))
+{
+	var informationalVersion = typeof(Program).Assembly
+		.GetCustomAttributes(typeof(System.Reflection.AssemblyInformationalVersionAttribute), inherit: false)
+		.OfType<System.Reflection.AssemblyInformationalVersionAttribute>()
+		.Select(attribute => attribute.InformationalVersion)
+		.FirstOrDefault();
+	Console.WriteLine((informationalVersion ?? typeof(Program).Assembly.GetName().Version?.ToString() ?? "unknown").Split('+')[0]);
+	return 0;
+}
+
 if (arguments.Contains("--help", StringComparer.Ordinal))
 {
 	PrintHelp();
@@ -18,7 +29,7 @@ var ignore = GetOption(arguments, "--ignore");
 var options = new PackOptions
 {
 	RootDirectory = root,
-	OutputPath = "codemap-output.xml",
+	OutputPath = "codemap-output.md",
 	IncludePatterns = ["**/*"],
 	IncludeFileSummary = true,
 	IncludeDirectoryStructure = true,
@@ -145,7 +156,7 @@ static OutputFormat ParseFormat(string? value) => value?.ToLowerInvariant() swit
 	"markdown" or "md" => OutputFormat.Markdown,
 	"plain" or "txt" => OutputFormat.Plain,
 	"json" => OutputFormat.Json,
-	_ => OutputFormat.Xml
+	_ => OutputFormat.Markdown
 };
 
 static void PrintHelp()
@@ -168,7 +179,7 @@ static void PrintHelp()
 	Console.WriteLine();
 	Console.WriteLine("Output:");
 	Console.WriteLine("  --format <xml|markdown|json|plain>");
-	Console.WriteLine("  --output <path>               Output file (default: codemap-output.xml)");
+	Console.WriteLine("  --output <path>               Output file (default: codemap-output.md)");
 	Console.WriteLine("  --no-summary                  Omit summary metadata");
 	Console.WriteLine("  --no-tree                     Omit directory structure");
 	Console.WriteLine("  --split-output <bytes>        Split large output into numbered files");
@@ -185,6 +196,7 @@ static void PrintHelp()
 	Console.WriteLine("  --include-logs                Include recent git commits");
 	Console.WriteLine("  --include-logs-count <count>  Number of commits (default: 20)");
 	Console.WriteLine("  --watch                       Report source changes");
+	Console.WriteLine("  --version                     Show the tool version");
 	Console.WriteLine("  --help                       Show this help");
 	Console.WriteLine();
 	Console.WriteLine("Examples:");

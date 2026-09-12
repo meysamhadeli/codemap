@@ -11,8 +11,8 @@ public enum OutputFormat
 public sealed record PackOptions
 {
     public required string RootDirectory { get; init; }
-    public string OutputPath { get; init; } = "codemap-output.xml";
-    public OutputFormat Format { get; init; } = OutputFormat.Xml;
+    public string OutputPath { get; init; } = "codemap-output.md";
+    public OutputFormat Format { get; init; } = OutputFormat.Markdown;
     public IReadOnlyList<string> IncludePatterns { get; init; } = ["**/*"];
     public IReadOnlyList<string> IgnorePatterns { get; init; } = [];
     public bool IncludeFileSummary { get; init; } = true;

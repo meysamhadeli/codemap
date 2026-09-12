@@ -183,7 +183,7 @@ codemap --help
 | `--include` | comma-separated globs | Include only matching paths, for example `**/*.cs,**/*.md`. |
 | `--ignore` | comma-separated globs | Add ignore patterns for this run. |
 | `--format` | `xml`, `markdown`, `md`, `json`, `plain`, `txt` | Output format. Defaults to XML. |
-| `--output` | path | Output file path. Defaults to `codemap-output.xml`. |
+| `--output` | path | Output file path. Defaults to `codemap-output.md`. |
 | `--no-summary` | flag | Remove file count and token summary from structured output. |
 | `--no-tree` | flag | Remove the directory/file listing from structured output. |
 | `--line-numbers` | flag | Prefix each output line with its line number. |

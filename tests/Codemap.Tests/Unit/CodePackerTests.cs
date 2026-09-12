@@ -5,6 +5,17 @@ namespace Codemap.Tests;
 public sealed class CodePackerTests
 {
     [Fact]
+    public async Task PackAsync_UsesMarkdownByDefault()
+    {
+        using var fixture = new TemporaryDirectory();
+        await File.WriteAllTextAsync(Path.Combine(fixture.Path, "sample.cs"), "class Sample {}\n");
+
+        var result = await new CodePacker().PackAsync(new PackOptions { RootDirectory = fixture.Path });
+
+        result.Content.ShouldStartWith("# Codemap");
+    }
+
+    [Fact]
     public async Task PackAsync_ExcludesDefaultIgnoredDirectoriesAndAppliesPatterns()
     {
         using var fixture = new TemporaryDirectory();
