@@ -22,7 +22,6 @@ public sealed record PackOptions
     public bool RemoveEmptyLines { get; init; }
     public int? TokenBudget { get; init; }
     public long? MaxFileSizeBytes { get; init; }
-    public bool CompressCode { get; init; }
     public bool EnableSecurityCheck { get; init; }
     public bool IncludeGitDiffs { get; init; }
     public bool IncludeGitLogs { get; init; }

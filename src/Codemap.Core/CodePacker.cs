@@ -46,7 +46,7 @@ public sealed class CodePacker
             }
 
             sourcePaths.Add(relativePath);
-            content = Transform(content, relativePath, options);
+            content = Transform(content, options);
             var lineCount = content.Length == 0 ? 0 : content.Split('\n').Length;
             files.Add(new PackedFile(relativePath, content, content.Length, lineCount, TokenCounter.Count(content)));
         }
@@ -103,13 +103,8 @@ public sealed class CodePacker
         return Regex.IsMatch(path, expression, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
     }
 
-    private static string Transform(string content, string relativePath, PackOptions options)
+    private static string Transform(string content, PackOptions options)
     {
-        if (options.CompressCode)
-        {
-            content = CodeCompressor.Compress(content, relativePath, detectLanguage: true);
-        }
-
         if (options.RemoveComments)
         {
             content = Regex.Replace(content, @"(^|\s)//.*$", "$1", RegexOptions.Multiline);

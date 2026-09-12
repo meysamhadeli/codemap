@@ -18,12 +18,11 @@ flowchart LR
 	E --> F[Result]
 	G[Git metadata] -. optional .-> E
 	H[Security scan] -. optional .-> C
-	I[Tree-sitter compression] -. optional .-> D
 ```
 
 1. **Discover**: `CodePacker` finds files beneath the configured root in deterministic path order.
 2. **Filter**: include patterns, default exclusions, custom ignore patterns, `.gitignore`, and `.ignore` determine which paths remain.
-3. **Transform**: optional line numbers, comment removal, empty-line removal, and Tree-sitter compression modify content.
+3. **Transform**: optional line numbers, comment removal, and empty-line removal modify content.
 4. **Render**: renderers produce XML, Markdown, plain text, or JSON.
 5. **Report**: the result includes file count, character count, token counts, Git metadata, and security exclusions.
 
@@ -40,14 +39,11 @@ Configuration is loaded from `codemap.json` or `codemap.config.json` when presen
 ## Optional Stages
 
 - Bounded file-size filtering, output splitting, and token budgets keep processing predictable.
-- Tree-sitter compresses supported source files by extension while preserving structural declarations.
 - DevSkim scans original source content before transformations and excludes files with actionable findings.
 - Git diff/log metadata can be added to local or remote repository context.
 - Binary and invalid UTF-8 files are skipped.
 - Remote input clones a repository into a temporary directory; watch mode reports changes so callers can rerun packing.
 
-Tree-sitter currently covers C#, JavaScript, TypeScript, TSX, Python, Java, Go, Rust, C, C++, Ruby, PHP, HTML, CSS, JSON, Bash, Scala, Swift, and TOML.
-
-The CLI maps command-line arguments to `PackOptions`; it does not own discovery or rendering. Future capabilities should follow the same boundary. Remote repository acquisition, Git metadata, DevSkim security analysis, AST compression, external processors, split output, and watch mode can be added as independent services or pipeline stages with focused tests.
+The CLI maps command-line arguments to `PackOptions`; it does not own discovery or rendering. Future capabilities should follow the same boundary. Remote repository acquisition, Git metadata, DevSkim security analysis, external processors, split output, and watch mode can be added as independent services or pipeline stages with focused tests.
 
 Token counts use the `cl100k_base` encoding through `Microsoft.ML.Tokenizers`; counts are included per file and in output summaries.

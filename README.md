@@ -16,7 +16,7 @@
 - [Development](#development)
 - [Troubleshooting](#troubleshooting)
 
-codemap is a .NET 10 command-line tool and reusable C# library for turning a repository into compact, AI-friendly output. It provides deterministic discovery, Git-aware filtering, token counting, Tree-sitter compression, DevSkim security scanning, and configurable output formats.
+codemap is a .NET 10 command-line tool and reusable C# library for turning a repository into compact, AI-friendly output. It provides deterministic discovery, Git-aware filtering, token counting, DevSkim security scanning, and configurable output formats.
 
 ## Installation
 
@@ -43,7 +43,6 @@ Running `codemap` without options scans the current directory. Use `--root` when
 | 🌿 | Git awareness | Includes diffs and recent commits when requested. |
 | 🔢 | Token counts | Reports GPT-4-compatible `cl100k_base` counts per file and overall. |
 | 🛡️ | Security filtering | Uses DevSkim and excludes files with actionable findings. |
-| 🗜️ | Code compression | Uses Tree-sitter to preserve declarations while reducing context size. |
 | 🧹 | Content cleanup | Removes comments or empty lines and can add line numbers. |
 | 📝 | Multiple formats | Writes Markdown, XML, JSON, or plain text. |
 | 📏 | Size controls | Supports file-size limits, token budgets, and split output. |
@@ -67,7 +66,7 @@ codemap --root . --format markdown --output repository.md
 ### 3. Keep output within a model context window
 
 ```bash
-codemap --root . --include "src/**/*.cs" --compress --token-budget 12000 --output compact-context.md
+codemap --root . --include "src/**/*.cs" --token-budget 12000 --output compact-context.md
 ```
 
 > [!NOTE]
@@ -110,24 +109,6 @@ codemap \
 ```
 
 codemap also reads `.gitignore` and `.ignore` automatically.
-
-### 🗜️ Compress
-
-Use compression and cleanup options when the full repository is too large for your model's context window:
-
-```bash
-codemap \
-	--root . \
-	--include "src/**/*.cs" \
-	--compress \
-	--remove-comments \
-	--remove-empty-lines \
-	--token-budget 12000 \
-	--format markdown \
-	--output compact-context.md
-```
-
-`--compress` keeps important declarations such as classes, methods, interfaces, properties, and types while reducing implementation detail.
 
 ### 🛡️ Security Check
 
@@ -208,7 +189,6 @@ codemap --help
 | `--line-numbers` | flag | Prefix each output line with its line number. |
 | `--remove-comments` | flag | Remove common `//` and `/* ... */` comments before rendering. |
 | `--remove-empty-lines` | flag | Remove blank lines after other transformations. |
-| `--compress` | flag | Extract structural declarations with Tree-sitter. |
 | `--security-check` | flag | Scan original files with DevSkim and exclude files with findings. |
 | `--max-file-size` | bytes | Skip files larger than this size before reading them. |
 | `--token-budget` | count | Fail if the final rendered output exceeds this token count. |
@@ -219,7 +199,7 @@ codemap --help
 | `--watch` | flag | Watch the source tree and print a notification when files change. Run codemap again to regenerate output. |
 | `--help` | flag | Show command usage, options, and examples without packing. |
 
-Boolean options are enabled by writing the flag. For example, use `--compress`, not `--compress true`.
+Boolean options are enabled by writing the flag.
 
 ## Configuration
 
@@ -236,7 +216,6 @@ Configuration uses JSON. codemap automatically loads `codemap.json` or `codemap.
 	"showLineNumbers": false,
 	"removeComments": true,
 	"removeEmptyLines": true,
-	"compressCode": true,
 	"enableSecurityCheck": true,
 	"maxFileSizeBytes": 500000,
 	"tokenBudget": 12000,
@@ -291,22 +270,9 @@ src/**        everything under src
 
 ### 🛡️ Security Scanning
 
-`--security-check` uses Microsoft DevSkim embedded rules. codemap scans the original UTF-8 source before compression or cleanup transformations. Files with actionable DevSkim findings are excluded from the packed result instead of causing the entire operation to fail.
+`--security-check` uses Microsoft DevSkim embedded rules. codemap scans the original UTF-8 source before cleanup transformations. Files with actionable DevSkim findings are excluded from the packed result instead of causing the entire operation to fail.
 
 Excluded paths are reported on the console and exposed through the result model. Use this mode when creating context from repositories that may contain credentials, weak cryptography, or other known security patterns.
-
-### 🗜️ Code Compression
-
-`--compress` uses Tree-sitter grammars and keeps structural declarations such as classes, interfaces, functions, methods, properties, and types. It is useful when the full implementation is too large for an AI context but the public shape of the code should remain visible.
-
-Supported extension-based languages include:
-
-```text
-C#, JavaScript, TypeScript, TSX, Python, Java, Go, Rust, C, C++,
-Ruby, PHP, Kotlin, HTML, CSS, JSON, Bash, Scala, Swift, TOML
-```
-
-Unknown extensions and parser failures fall back to the original content. Compression is opt-in and should be disabled when exact implementation details are required.
 
 ### 📝 Output Formats
 
@@ -330,7 +296,7 @@ Plain text emits each file under a clear path separator. It is useful for tools 
 
 codemap uses the GPT-4-compatible `cl100k_base` tokenizer from `Microsoft.ML.Tokenizers`. Each packed file has a token count, and the final rendered output has an aggregate count.
 
-`--token-budget` validates the final rendered output. If the output is too large, codemap returns an error rather than silently producing an incomplete result. Use `--include`, `--ignore`, `--compress`, `--max-file-size`, or `--split-output` to control size.
+`--token-budget` validates the final rendered output. If the output is too large, codemap returns an error rather than silently producing an incomplete result. Use `--include`, `--ignore`, `--max-file-size`, or `--split-output` to control size.
 
 ### 🌐 Remote Repositories, Git Metadata, and Watch Mode
 
@@ -378,7 +344,6 @@ var result = await new CodePacker().PackAsync(new PackOptions
 		RootDirectory = ".",
 		Format = OutputFormat.Markdown,
 		IncludePatterns = ["**/*.cs"],
-		CompressCode = true,
 		EnableSecurityCheck = true,
 		TokenBudget = 12000
 });
@@ -405,7 +370,7 @@ See [docs/how-it-works.md](docs/how-it-works.md) for pipeline boundaries and ext
 
 **The output is too large**
 
-Use `--compress`, narrower `--include` patterns, more `--ignore` patterns, `--max-file-size`, or `--token-budget`.
+Use narrower `--include` patterns, more `--ignore` patterns, `--max-file-size`, or `--token-budget`.
 
 **A file is missing**
 

@@ -27,7 +27,6 @@ var options = new PackOptions
 	RemoveEmptyLines = arguments.Contains("--remove-empty-lines"),
 	TokenBudget = GetIntOption(arguments, "--token-budget"),
 	MaxFileSizeBytes = GetLongOption(arguments, "--max-file-size"),
-	CompressCode = arguments.Contains("--compress"),
 	EnableSecurityCheck = arguments.Contains("--security-check"),
 	IncludeGitDiffs = arguments.Contains("--include-diffs"),
 	IncludeGitLogs = arguments.Contains("--include-logs"),
@@ -61,7 +60,6 @@ try
 		RemoveEmptyLines = arguments.Contains("--remove-empty-lines") || options.RemoveEmptyLines,
 		TokenBudget = GetIntOption(arguments, "--token-budget") ?? options.TokenBudget
 		,MaxFileSizeBytes = GetLongOption(arguments, "--max-file-size") ?? options.MaxFileSizeBytes
-		,CompressCode = arguments.Contains("--compress") || options.CompressCode
 		,EnableSecurityCheck = arguments.Contains("--security-check") || options.EnableSecurityCheck
 		,IncludeGitDiffs = arguments.Contains("--include-diffs") || options.IncludeGitDiffs
 		,IncludeGitLogs = arguments.Contains("--include-logs") || options.IncludeGitLogs
@@ -176,7 +174,6 @@ static void PrintHelp()
 	Console.WriteLine("  --split-output <bytes>        Split large output into numbered files");
 	Console.WriteLine();
 	Console.WriteLine("Transformations and limits:");
-	Console.WriteLine("  --compress                    Compress code with Tree-sitter");
 	Console.WriteLine("  --security-check              Exclude files with DevSkim findings");
 	Console.WriteLine("  --remove-comments             Remove common source comments");
 	Console.WriteLine("  --remove-empty-lines          Remove blank lines");
@@ -192,7 +189,7 @@ static void PrintHelp()
 	Console.WriteLine();
 	Console.WriteLine("Examples:");
 	Console.WriteLine("  codemap --root . --format markdown --output repository.md");
-	Console.WriteLine("  codemap --include \"**/*.cs\" --compress --security-check");
+	Console.WriteLine("  codemap --include \"**/*.cs\" --security-check");
 	Console.WriteLine("  codemap --remote microsoft/generative-ai-for-beginners --remote-branch main");
 	Console.WriteLine();
 	Console.WriteLine("More documentation: README.md");

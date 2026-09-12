@@ -16,7 +16,6 @@ public sealed class PackConfiguration
     public bool? RemoveEmptyLines { get; init; }
     public int? TokenBudget { get; init; }
     public long? MaxFileSizeBytes { get; init; }
-    public bool? CompressCode { get; init; }
     public bool? EnableSecurityCheck { get; init; }
     public bool? IncludeGitDiffs { get; init; }
     public bool? IncludeGitLogs { get; init; }
@@ -46,7 +45,6 @@ public sealed class PackConfiguration
         RemoveEmptyLines = RemoveEmptyLines ?? defaults.RemoveEmptyLines,
         TokenBudget = TokenBudget ?? defaults.TokenBudget,
         MaxFileSizeBytes = MaxFileSizeBytes ?? defaults.MaxFileSizeBytes,
-        CompressCode = CompressCode ?? defaults.CompressCode,
         EnableSecurityCheck = EnableSecurityCheck ?? defaults.EnableSecurityCheck,
         IncludeGitDiffs = IncludeGitDiffs ?? defaults.IncludeGitDiffs,
         IncludeGitLogs = IncludeGitLogs ?? defaults.IncludeGitLogs,

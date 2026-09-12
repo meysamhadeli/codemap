@@ -36,24 +36,6 @@ public sealed class AdvancedFeatureTests
         result.ExcludedFiles.ShouldContain("unsafe.cs");
     }
 
-    [Fact]
-    public async Task PackAsync_CompressesCodeAndSkipsOversizedFiles()
-    {
-        using var fixture = new TemporaryDirectory();
-        await File.WriteAllTextAsync(Path.Combine(fixture.Path, "large.txt"), new string('x', 100));
-        await File.WriteAllTextAsync(Path.Combine(fixture.Path, "sample.cs"), "public class Sample { public void Run() { return; } }\n");
-
-        var result = await new CodePacker().PackAsync(new PackOptions
-        {
-            RootDirectory = fixture.Path,
-            MaxFileSizeBytes = 80,
-            CompressCode = true
-        });
-
-        result.Files.Select(file => file.RelativePath).ShouldBe(new[] { "sample.cs" });
-        result.Files[0].Content.ShouldContain("public class Sample");
-    }
-
     private sealed class TemporaryDirectory : IDisposable
     {
         public TemporaryDirectory()

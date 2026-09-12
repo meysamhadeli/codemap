@@ -4,7 +4,6 @@
     <PackageReference Include="Microsoft.CST.DevSkim" />
     <PackageReference Include="Microsoft.ML.Tokenizers" />
     <PackageReference Include="Microsoft.ML.Tokenizers.Data.Cl100kBase" />
-    <PackageReference Include="TreeSitter.DotNet" />
   </ItemGroup>
 
 </Project>
