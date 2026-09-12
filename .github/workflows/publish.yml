@@ -5,6 +5,11 @@ on:
     tags:
       - 'v*.*.*'
   workflow_dispatch:
+    inputs:
+      version:
+        description: Package version to publish, for example 1.0.1
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -33,19 +38,22 @@ jobs:
       - name: Pack CLI tool
         shell: bash
         run: |
-          if [[ "$GITHUB_REF_NAME" == v* ]]; then
-            version="${GITHUB_REF_NAME#v}"
-            dotnet pack src/Codemap.Cli/Codemap.Cli.csproj \
-              --no-build \
-              --configuration Release \
-              --output ./artifacts/packages \
-              -p:PackageVersion="$version"
-          else
-            dotnet pack src/Codemap.Cli/Codemap.Cli.csproj \
-              --no-build \
-              --configuration Release \
-              --output ./artifacts/packages
+          version="${GITHUB_REF_NAME#v}"
+          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
+            version="${{ inputs.version }}"
           fi
 
+          rm -rf ./artifacts/packages
+          mkdir -p ./artifacts/packages
+          dotnet pack src/Codemap.Cli/Codemap.Cli.csproj \
+            --no-build \
+            --configuration Release \
+            --output ./artifacts/packages \
+            -p:PackageVersion="$version"
+
+          package="./artifacts/packages/Codemap.Cli.${version}.nupkg"
+          test -f "$package"
+          echo "PACKAGE_PATH=$package" >> "$GITHUB_ENV"
+
       - name: Publish package
-        run: dotnet nuget push ./artifacts/packages/*.nupkg --api-key "${{ secrets.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json --skip-duplicate
+        run: dotnet nuget push "$PACKAGE_PATH" --api-key "${{ secrets.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json --skip-duplicate
