@@ -23,7 +23,7 @@ codemap is a .NET 10 command-line tool and reusable C# library for turning a rep
 codemap is distributed as a .NET tool. Install the published package globally with:
 
 ```bash
-dotnet tool install --global Dotnet.Codemap
+dotnet tool install --global Codemap.Cli
 ```
 
 Then run it from any directory with `codemap`.
@@ -54,7 +54,7 @@ Running `codemap` without options scans the current directory. Use `--root` when
 ### 1. Install
 
 ```bash
-dotnet tool install --global Dotnet.Codemap
+dotnet tool install --global Codemap.Cli
 ```
 
 ### 2. Pack a repository

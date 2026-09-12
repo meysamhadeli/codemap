@@ -2,17 +2,25 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Codemap.Core\Codemap.Core.csproj" />
+    <None Include="..\..\README.md" Pack="true" PackagePath="README.md" />
   </ItemGroup>
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>codemap</ToolCommandName>
-    <PackageId>Dotnet.Codemap</PackageId>
+    <PackageId>Codemap.Cli</PackageId>
     <Version>1.0.0</Version>
     <Authors>Codemap Contributors</Authors>
-    <Description>Package repositories into compact, AI-friendly output.</Description>
-    <PackageTags>ai;repository;source-code;developer-tool</PackageTags>
+    <Description>A command-line tool that scans repositories and produces deterministic, AI-ready context in Markdown, JSON, XML, or plain text, with filtering, Git metadata, token budgets, and security scanning.</Description>
+    <PackageTags>ai;repository;context;code;dotnet</PackageTags>
+    <PackageProjectUrl>https://github.com/meysamhadeli/codemap</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/meysamhadeli/codemap.git</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageReleaseNotes>Initial release of the codemap command-line tool.</PackageReleaseNotes>
+    <Copyright>Copyright (c) 2026 Meysam Hadeli</Copyright>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
 </Project>
