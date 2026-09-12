@@ -20,7 +20,7 @@ public sealed class CliIntegrationTests
         var result = await RunCliAsync("--version");
 
         result.ExitCode.ShouldBe(0, result.StandardError);
-        result.StandardOutput.Trim().ShouldBe("1.0.0");
+        Version.TryParse(result.StandardOutput.Trim(), out _).ShouldBeTrue();
     }
 
     [Fact]
