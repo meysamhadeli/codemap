@@ -1,6 +1,6 @@
 # codemap
 
-> **Repository context, compressed.** Package source code into deterministic, AI-friendly output from the command line or a reusable .NET library.
+> **codemap** scans codebases and turns selected files into focused, deterministic context for AI tools and developers. It filters files, can include Git history, enforces token and size limits, and excludes files with security findings before producing the output.
 
 [![.NET 10](https://img.shields.io/badge/.NET-10-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/download/dotnet/10.0) [![License](https://img.shields.io/badge/license-MIT-2ea44f?logo=opensourceinitiative&logoColor=white)](LICENSE)
 
@@ -15,8 +15,6 @@
 - [C# library](#using-the-c-library)
 - [Development](#development)
 - [Troubleshooting](#troubleshooting)
-
-codemap is a .NET 10 command-line tool and reusable C# library for turning a repository into compact, AI-friendly output. It provides deterministic discovery, Git-aware filtering, token counting, DevSkim security scanning, and configurable output formats.
 
 ## Installation
 
