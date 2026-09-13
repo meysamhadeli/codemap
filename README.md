@@ -13,8 +13,6 @@
 - [Configuration](#configuration)
 - [Advanced capabilities](#advanced-capabilities)
 - [C# library](#using-the-c-library)
-- [Development](#development)
-- [Troubleshooting](#troubleshooting)
 
 ## Installation
 
@@ -26,10 +24,10 @@ dotnet tool install --global Codemap.Cli
 
 Then run it from any directory with `codemap`.
 
-Running `codemap` without options scans the current directory. Use `--root` when your current directory contains protected system folders, for example `codemap --root C:\path\to\repository`.
+Running `codemap` without options scans the current directory. Change into the repository directory before running it.
 
 > [!TIP]
-> Start with `codemap --root . --format markdown --output repository.md` to create a shareable repository snapshot.
+> Start with `codemap --format markdown --output repository.md` to create a shareable repository snapshot.
 
 ## Features: What codemap Provides
 
@@ -58,13 +56,13 @@ dotnet tool install --global Codemap.Cli
 ### 2. Pack a repository
 
 ```bash
-codemap --root . --format markdown --output repository.md
+codemap --format markdown --output repository.md
 ```
 
 ### 3. Keep output within a model context window
 
 ```bash
-codemap --root . --include "src/**/*.cs" --token-budget 12000 --output compact-context.md
+codemap --include "src/**/*.cs" --token-budget 12000 --output compact-context.md
 ```
 
 > [!NOTE]
@@ -74,7 +72,7 @@ codemap --root . --include "src/**/*.cs" --token-budget 12000 --output compact-c
 
 codemap's main workflow is simple: choose a source directory, select an output format, and write the generated repository context to a file. The examples below focus on core commands.
 
-### ❓ Help
+### ❔ Help
 
 Use the built-in help whenever you need to check available commands and options:
 
@@ -82,24 +80,12 @@ Use the built-in help whenever you need to check available commands and options:
 codemap --help
 ```
 
-### 📁 Root
-
-Pack the current directory into Markdown, which is convenient for sharing with an AI tool:
-
-```bash
-codemap \
-	--root . \
-	--format markdown \
-	--output repository.md
-```
-
-### 🎯 Include and Ignore
+### 🔀 Include and Ignore
 
 Use `--include` to select files and `--ignore` to remove paths from that selection:
 
 ```bash
 codemap \
-	--root . \
 	--include "src/**/*.cs,README.md" \
 	--ignore "**/bin/**,**/obj/**" \
 	--format markdown \
@@ -114,7 +100,6 @@ Use DevSkim to exclude files with actionable security findings before they enter
 
 ```bash
 codemap \
-	--root . \
 	--security-check \
 	--format markdown \
 	--output reviewed-context.md
@@ -124,7 +109,7 @@ codemap reports excluded files in the terminal. Node.js and npm are not required
 
 ### 📝 Format
 
-Use `--format` to choose the output that fits your workflow:
+The default format is Markdown. Use `--format` to choose another output format when needed:
 
 ```bash
 # Human- and AI-friendly document
@@ -174,13 +159,12 @@ codemap --help
 
 | Option | Value | Description |
 | --- | --- | --- |
-| `--root` | path | Source directory. Defaults to the current directory. |
 | `--remote` | URL or `owner/repository` | Clone a remote Git repository into a temporary directory before packing. |
 | `--remote-branch` | branch | Branch to clone when using `--remote`. |
 | `--config` | path | Configuration JSON file. Without this option, codemap searches for `codemap.json` and `codemap.config.json`. |
 | `--include` | comma-separated globs | Include only matching paths, for example `**/*.cs,**/*.md`. |
 | `--ignore` | comma-separated globs | Add ignore patterns for this run. |
-| `--format` | `xml`, `markdown`, `md`, `json`, `plain`, `txt` | Output format. Defaults to XML. |
+| `--format` | `xml`, `markdown`, `md`, `json`, `plain`, `txt` | Output format. Defaults to Markdown. |
 | `--output` | path | Output file path. Defaults to `codemap-output.md`. |
 | `--no-summary` | flag | Remove file count and token summary from structured output. |
 | `--no-tree` | flag | Remove the directory/file listing from structured output. |
@@ -321,67 +305,25 @@ codemap \
 For a local repository:
 
 ```bash
-codemap --root . --include-diffs --include-logs
+codemap --include-diffs --include-logs
 ```
 
 Watch mode reports changes but does not automatically repack:
 
 ```bash
-codemap --root . --watch
+codemap --watch
 ```
 
-## Using the C# Library
+# 🌟 Support
 
-The reusable core can be called without the CLI:
+If you like my work, feel free to:
 
-```csharp
-using Codemap.Core;
+- ⭐ this repository. And we will be happy together :)
 
-var result = await new CodePacker().PackAsync(new PackOptions
-{
-		RootDirectory = ".",
-		Format = OutputFormat.Markdown,
-		IncludePatterns = ["**/*.cs"],
-		EnableSecurityCheck = true,
-		TokenBudget = 12000
-});
+Thanks a bunch for supporting me!
 
-Console.WriteLine(result.Content);
-Console.WriteLine($"Files: {result.Files.Count}");
-Console.WriteLine($"Tokens: {result.TokenCount}");
-```
+## 🤝 Contribution
 
-The core API returns packed files, rendered content, character and token counts, Git metadata, and security-excluded paths.
+Thanks to all [contributors](https://github.com/meysamhadeli/codemap/graphs/contributors), you're awesome and this wouldn't be possible without you! The goal is to build a categorized, community-driven collection of very well-known resources.
 
-## Development
-
-```bash
-dotnet build Codemap.slnx
-dotnet test --solution Codemap.slnx
-```
-
-Tests are organized under `tests/Codemap.Tests/Unit/` for core behavior and `tests/Codemap.Tests/Integration/` for CLI process behavior.
-
-See [docs/how-it-works.md](docs/how-it-works.md) for pipeline boundaries and extension guidance. See [AGENTS.md](AGENTS.md) for repository conventions.
-
-## Troubleshooting
-
-**The output is too large**
-
-Use narrower `--include` patterns, more `--ignore` patterns, `--max-file-size`, or `--token-budget`.
-
-**A file is missing**
-
-Check the default ignored directories, `.gitignore`, `.ignore`, and the include patterns. Binary and invalid UTF-8 files are intentionally skipped.
-
-**Git metadata is empty**
-
-Run from a Git working tree and verify that `git` is installed and available on `PATH`.
-
-**Remote cloning fails**
-
-Verify the repository URL, branch name, network access, and Git installation.
-
-**Security files are excluded**
-
-Review the DevSkim findings reported by the CLI. codemap excludes actionable findings by design so sensitive or risky content does not enter the generated AI context.
+Please follow this [contribution guideline](./CONTRIBUTION.md) to submit a pull request or create the issue.

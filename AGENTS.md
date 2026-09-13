@@ -24,7 +24,7 @@ Do not add generated build output to source control.
 
 ## Build and Run
 
-Build with `dotnet build Codemap.slnx`. Test with `dotnet test --solution Codemap.slnx`. Run the installed CLI with `codemap --root . --format markdown --output codemap-output.md`.
+Build with `dotnet build Codemap.slnx`. Test with `dotnet test --solution Codemap.slnx`. Run the installed CLI from the target repository directory with `codemap --format markdown --output codemap-output.md`.
 
 ## Testing
 

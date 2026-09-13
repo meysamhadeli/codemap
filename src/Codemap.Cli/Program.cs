@@ -20,7 +20,7 @@ if (arguments.Contains("--help", StringComparer.Ordinal))
 	return 0;
 }
 
-var root = GetOption(arguments, "--root") ?? Directory.GetCurrentDirectory();
+var root = Directory.GetCurrentDirectory();
 var remote = GetOption(arguments, "--remote");
 var configPath = GetOption(arguments, "--config") ?? FindDefaultConfig(root);
 var include = GetOption(arguments, "--include");
@@ -167,7 +167,6 @@ static void PrintHelp()
 	Console.WriteLine("  codemap [options]");
 	Console.WriteLine();
 	Console.WriteLine("Source:");
-	Console.WriteLine("  --root <path>                 Source directory (default: current directory)");
 	Console.WriteLine("  --remote <url|owner/repo>     Clone a remote Git repository");
 	Console.WriteLine("  --remote-branch <branch>      Branch to clone");
 	Console.WriteLine();
@@ -200,7 +199,7 @@ static void PrintHelp()
 	Console.WriteLine("  --help                       Show this help");
 	Console.WriteLine();
 	Console.WriteLine("Examples:");
-	Console.WriteLine("  codemap --root . --format markdown --output repository.md");
+	Console.WriteLine("  codemap --format markdown --output repository.md");
 	Console.WriteLine("  codemap --include \"**/*.cs\" --security-check");
 	Console.WriteLine("  codemap --remote microsoft/generative-ai-for-beginners --remote-branch main");
 	Console.WriteLine();

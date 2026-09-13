@@ -30,7 +30,7 @@ public sealed class CliIntegrationTests
         await File.WriteAllTextAsync(Path.Combine(fixture.Path, "sample.cs"), "class Sample {}\n");
         var outputPath = Path.Combine(fixture.Path, "result.json");
 
-        var result = await RunCliAsync("--root", fixture.Path, "--format", "json", "--output", outputPath);
+        var result = await RunCliInDirectoryAsync(fixture.Path, "--format", "json", "--output", outputPath);
 
         result.ExitCode.ShouldBe(0, result.StandardError);
         var output = await File.ReadAllTextAsync(outputPath);
@@ -45,7 +45,7 @@ public sealed class CliIntegrationTests
         await File.WriteAllTextAsync(Path.Combine(fixture.Path, "sample.txt"), new string('x', 100));
         var outputPath = Path.Combine(fixture.Path, "result.txt");
 
-        var result = await RunCliAsync("--root", fixture.Path, "--format", "plain", "--output", outputPath, "--split-output", "10");
+        var result = await RunCliInDirectoryAsync(fixture.Path, "--format", "plain", "--output", outputPath, "--split-output", "10");
 
         result.ExitCode.ShouldBe(0, result.StandardError);
         File.Exists(outputPath + ".1").ShouldBeTrue();
@@ -80,7 +80,7 @@ public sealed class CliIntegrationTests
         await File.WriteAllTextAsync(Path.Combine(fixture.Path, "sample.cs"), "class Sample {}\n");
         var outputPath = Path.Combine(fixture.Path, "watch.xml");
         var result = await RunCliUntilOutputAsync(
-            new[] { "--root", fixture.Path, "--output", outputPath, "--watch" }, "Watching for changes.");
+            fixture.Path, new[] { "--output", outputPath, "--watch" }, "Watching for changes.");
 
         result.StandardOutput.ShouldContain("Watching for changes.");
     }
@@ -109,7 +109,7 @@ public sealed class CliIntegrationTests
         return new CliResult(process.ExitCode, standardOutput, standardError);
     }
 
-    private static async Task<CliResult> RunCliUntilOutputAsync(string[] arguments, string expectedOutput)
+    private static async Task<CliResult> RunCliInDirectoryAsync(string workingDirectory, params string[] arguments)
     {
         var assemblyPath = Path.Combine(AppContext.BaseDirectory, "Codemap.Cli.dll");
         var startInfo = new ProcessStartInfo("dotnet")
@@ -117,7 +117,32 @@ public sealed class CliIntegrationTests
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             UseShellExecute = false,
-            CreateNoWindow = true
+            CreateNoWindow = true,
+            WorkingDirectory = workingDirectory
+        };
+        startInfo.ArgumentList.Add(assemblyPath);
+        foreach (var argument in arguments)
+        {
+            startInfo.ArgumentList.Add(argument);
+        }
+
+        using var process = Process.Start(startInfo) ?? throw new InvalidOperationException("Unable to start dotnet.");
+        var standardOutput = await process.StandardOutput.ReadToEndAsync();
+        var standardError = await process.StandardError.ReadToEndAsync();
+        await process.WaitForExitAsync();
+        return new CliResult(process.ExitCode, standardOutput, standardError);
+    }
+
+    private static async Task<CliResult> RunCliUntilOutputAsync(string workingDirectory, string[] arguments, string expectedOutput)
+    {
+        var assemblyPath = Path.Combine(AppContext.BaseDirectory, "Codemap.Cli.dll");
+        var startInfo = new ProcessStartInfo("dotnet")
+        {
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            WorkingDirectory = workingDirectory
         };
         startInfo.ArgumentList.Add(assemblyPath);
         foreach (var argument in arguments)
