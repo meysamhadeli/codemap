@@ -31,7 +31,7 @@ Running `codemap` without options scans the current directory. Change into the r
 > [!TIP]
 > Start with `codemap --format markdown --output repository.md` to create a shareable repository snapshot.
 
-## Features: What codemap Provides
+## Features
 
 | | Capability | What it does |
 | --- | --- | --- |
