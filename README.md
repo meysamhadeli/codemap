@@ -6,13 +6,15 @@
 
 ## Contents
 
-- [Install](#installation)
+- [Installation](#installation)
 - [Features](#features-what-codemap-provides)
-- [Quick start](#quick-start)
+- [How to run](#how-to-run)
+- [Requirements](#requirements)
 - [Command reference](#command-reference)
 - [Configuration](#configuration)
 - [Advanced capabilities](#advanced-capabilities)
-- [C# library](#using-the-c-library)
+- [Support](#support)
+- [Contribution](#contribution)
 
 ## Installation
 
@@ -45,30 +47,7 @@ Running `codemap` without options scans the current directory. Change into the r
 | 🌐 | Repository sources | Packs a local directory or clones a remote Git repository. |
 | 👀 | Workflow support | Watches a directory for changes or exposes a reusable C# library. |
 
-## Quick Start
-
-### 1. Install
-
-```bash
-dotnet tool install --global Codemap.Cli
-```
-
-### 2. Pack a repository
-
-```bash
-codemap --format markdown --output repository.md
-```
-
-### 3. Keep output within a model context window
-
-```bash
-codemap --include "src/**/*.cs" --token-budget 12000 --output compact-context.md
-```
-
-> [!NOTE]
-> Generated output is deterministic when the same source, options, and Git state are used.
-
-## How to Run codemap
+## How to Run
 
 codemap's main workflow is simple: choose a source directory, select an output format, and write the generated repository context to a file. The examples below focus on core commands.
 
