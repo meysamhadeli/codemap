@@ -8,7 +8,7 @@ public sealed class PackConfiguration
     public string? OutputPath { get; init; }
     public OutputFormat? Format { get; init; }
     public string[]? IncludePatterns { get; init; }
-    public string[]? IgnorePatterns { get; init; }
+    public string[]? ExcludePatterns { get; init; }
     public bool? IncludeFileSummary { get; init; }
     public bool? IncludeDirectoryStructure { get; init; }
     public bool? ShowLineNumbers { get; init; }
@@ -37,7 +37,7 @@ public sealed class PackConfiguration
         OutputPath = OutputPath ?? defaults.OutputPath,
         Format = Format ?? defaults.Format,
         IncludePatterns = IncludePatterns ?? defaults.IncludePatterns,
-        IgnorePatterns = IgnorePatterns ?? defaults.IgnorePatterns,
+        ExcludePatterns = ExcludePatterns ?? defaults.ExcludePatterns,
         IncludeFileSummary = IncludeFileSummary ?? defaults.IncludeFileSummary,
         IncludeDirectoryStructure = IncludeDirectoryStructure ?? defaults.IncludeDirectoryStructure,
         ShowLineNumbers = ShowLineNumbers ?? defaults.ShowLineNumbers,
@@ -53,7 +53,7 @@ public sealed class PackConfiguration
     };
 }
 
-public static class IgnoreFileLoader
+public static class ExcludeFileLoader
 {
     public static IReadOnlyList<string> Load(string rootDirectory, params string[] fileNames)
     {

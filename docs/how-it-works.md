@@ -21,7 +21,7 @@ flowchart LR
 ```
 
 1. **Discover**: `CodePacker` finds files beneath the configured root in deterministic path order.
-2. **Filter**: include patterns, default exclusions, custom ignore patterns, `.gitignore`, and `.ignore` determine which paths remain.
+2. **Filter**: include patterns, default exclusions, custom exclude patterns, `.gitignore`, and `.ignore` determine which paths remain.
 3. **Transform**: optional line numbers, comment removal, and empty-line removal modify content.
 4. **Render**: renderers produce XML, Markdown, plain text, or JSON.
 5. **Report**: the result includes file count, character count, token counts, Git metadata, and security exclusions.
@@ -32,9 +32,9 @@ flowchart LR
 Built-in defaults < codemap.json / codemap.config.json < explicit CLI options
 ```
 
-Command-line values override file configuration. Include and ignore lists supplied on the command line replace their configured lists.
+Command-line values override file configuration. Include and exclude lists supplied on the command line replace their configured lists.
 
-Configuration is loaded from `codemap.json` or `codemap.config.json` when present. Explicit CLI options override file configuration. Ignore patterns are read from `.gitignore` and `.ignore`, in addition to options and built-in generated-directory exclusions. Patterns are evaluated in order and support `!` negation.
+Configuration is loaded from `codemap.json` or `codemap.config.json` when present. Explicit CLI options override file configuration. Exclude patterns are read from `.gitignore` and `.ignore`, in addition to options and built-in generated-directory exclusions. Each file uses one pattern per line; blank lines and `#` comments are skipped. Patterns are evaluated in order and support `!` negation. `.gitignore` is loaded first, `.ignore` second, and `--exclude` patterns after both files. Include patterns are applied last.
 
 ## Optional Stages
 

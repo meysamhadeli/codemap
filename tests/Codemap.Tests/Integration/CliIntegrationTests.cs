@@ -39,6 +39,23 @@ public sealed class CliIntegrationTests
     }
 
     [Fact]
+    public async Task Cli_ExcludesMatchingFiles()
+    {
+        using var fixture = new TemporaryDirectory();
+        await File.WriteAllTextAsync(Path.Combine(fixture.Path, "keep.cs"), "class Keep {}\n");
+        await File.WriteAllTextAsync(Path.Combine(fixture.Path, "secret.cs"), "class Secret {}\n");
+        var outputPath = Path.Combine(fixture.Path, "result.json");
+
+        var result = await RunCliInDirectoryAsync(
+            fixture.Path, "--exclude", "secret.cs", "--format", "json", "--output", outputPath);
+
+        result.ExitCode.ShouldBe(0, result.StandardError);
+        var output = await File.ReadAllTextAsync(outputPath);
+        output.ShouldContain("keep.cs");
+        output.ShouldNotContain("secret.cs");
+    }
+
+    [Fact]
     public async Task Cli_SplitsLargeOutput()
     {
         using var fixture = new TemporaryDirectory();

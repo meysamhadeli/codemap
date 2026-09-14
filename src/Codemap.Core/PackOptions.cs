@@ -14,7 +14,7 @@ public sealed record PackOptions
     public string OutputPath { get; init; } = "codemap-output.md";
     public OutputFormat Format { get; init; } = OutputFormat.Markdown;
     public IReadOnlyList<string> IncludePatterns { get; init; } = ["**/*"];
-    public IReadOnlyList<string> IgnorePatterns { get; init; } = [];
+    public IReadOnlyList<string> ExcludePatterns { get; init; } = [];
     public bool IncludeFileSummary { get; init; } = true;
     public bool IncludeDirectoryStructure { get; init; } = true;
     public bool ShowLineNumbers { get; init; }

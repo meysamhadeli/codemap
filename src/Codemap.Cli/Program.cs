@@ -24,7 +24,7 @@ var root = Directory.GetCurrentDirectory();
 var remote = GetOption(arguments, "--remote");
 var configPath = GetOption(arguments, "--config") ?? FindDefaultConfig(root);
 var include = GetOption(arguments, "--include");
-var ignore = GetOption(arguments, "--ignore");
+var exclude = GetOption(arguments, "--exclude");
 
 var options = new PackOptions
 {
@@ -63,7 +63,7 @@ try
 		OutputPath = GetOption(arguments, "--output") ?? options.OutputPath,
 		Format = GetOption(arguments, "--format") is { } format ? ParseFormat(format) : options.Format,
 		IncludePatterns = include is null ? options.IncludePatterns : SplitPatterns(include),
-		IgnorePatterns = ignore is null ? options.IgnorePatterns : SplitPatterns(ignore),
+		ExcludePatterns = exclude is null ? options.ExcludePatterns : SplitPatterns(exclude),
 		IncludeFileSummary = arguments.Contains("--no-summary") ? false : options.IncludeFileSummary,
 		IncludeDirectoryStructure = arguments.Contains("--no-tree") ? false : options.IncludeDirectoryStructure,
 		ShowLineNumbers = arguments.Contains("--line-numbers") || options.ShowLineNumbers,
@@ -172,7 +172,7 @@ static void PrintHelp()
 	Console.WriteLine();
 	Console.WriteLine("Selection:");
 	Console.WriteLine("  --include <patterns>          Comma-separated include globs");
-	Console.WriteLine("  --ignore <patterns>           Comma-separated ignore globs");
+	Console.WriteLine("  --exclude <patterns>          Comma-separated exclusion globs");
 	Console.WriteLine("  --max-file-size <bytes>       Skip larger files");
 	Console.WriteLine("  --config <path>               Configuration JSON file");
 	Console.WriteLine();

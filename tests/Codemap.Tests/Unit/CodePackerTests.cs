@@ -16,12 +16,12 @@ public sealed class CodePackerTests
     }
 
     [Fact]
-    public async Task PackAsync_ExcludesDefaultIgnoredDirectoriesAndAppliesPatterns()
+    public async Task PackAsync_ExcludesDefaultDirectoriesAndAppliesPatterns()
     {
         using var fixture = new TemporaryDirectory();
         await File.WriteAllTextAsync(Path.Combine(fixture.Path, "keep.cs"), "class Keep {}\n");
         Directory.CreateDirectory(Path.Combine(fixture.Path, "bin"));
-        await File.WriteAllTextAsync(Path.Combine(fixture.Path, "bin", "ignored.cs"), "class Ignored {}\n");
+        await File.WriteAllTextAsync(Path.Combine(fixture.Path, "bin", "excluded.cs"), "class Excluded {}\n");
         await File.WriteAllTextAsync(Path.Combine(fixture.Path, "notes.txt"), "notes\n");
 
         var result = await new CodePacker().PackAsync(new PackOptions

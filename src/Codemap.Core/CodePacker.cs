@@ -7,7 +7,7 @@ namespace Codemap.Core;
 
 public sealed class CodePacker
 {
-    private static readonly string[] DefaultIgnoredDirectories = [".git", "bin", "obj", "node_modules", "dist", "coverage"];
+    private static readonly string[] DefaultExcludedDirectories = [".git", "bin", "obj", "node_modules", "dist", "coverage"];
 
     public async Task<PackResult> PackAsync(PackOptions options, CancellationToken cancellationToken = default)
     {
@@ -72,20 +72,20 @@ public sealed class CodePacker
     private static bool IsIncluded(string relativePath, PackOptions options)
     {
         var segments = relativePath.Split('/');
-        if (segments.Any(segment => DefaultIgnoredDirectories.Contains(segment, StringComparer.OrdinalIgnoreCase)))
+        if (segments.Any(segment => DefaultExcludedDirectories.Contains(segment, StringComparer.OrdinalIgnoreCase)))
         {
             return false;
         }
 
-        var ignored = false;
-        foreach (var pattern in options.IgnorePatterns
-            .Concat(IgnoreFileLoader.Load(options.RootDirectory, ".gitignore", ".ignore")))
+        var excluded = false;
+        foreach (var pattern in options.ExcludePatterns
+            .Concat(ExcludeFileLoader.Load(options.RootDirectory, ".gitignore", ".ignore")))
         {
             var negated = pattern.StartsWith('!');
             var value = negated ? pattern[1..] : pattern;
-            if (Matches(relativePath, value)) ignored = !negated;
+            if (Matches(relativePath, value)) excluded = !negated;
         }
-        if (ignored) return false;
+        if (excluded) return false;
 
         return options.IncludePatterns.Count == 0 || options.IncludePatterns.Any(pattern => Matches(relativePath, pattern));
     }

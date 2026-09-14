@@ -37,7 +37,7 @@ Running `codemap` without options scans the current directory. Change into the r
 | --- | --- | --- |
 | 📦 | AI-ready packaging | Combines selected source files into one readable artifact. |
 | 🧭 | Deterministic discovery | Processes files in stable path order for repeatable output. |
-| 🎯 | Include and ignore rules | Filters paths with globs, `.gitignore`, and `.ignore`. |
+| 🎯 | Include and exclude rules | Filters paths with globs, `.gitignore`, and `.ignore`. |
 | 🌿 | Git awareness | Includes diffs and recent commits when requested. |
 | 🔢 | Token counts | Reports GPT-4-compatible `cl100k_base` counts per file and overall. |
 | 🛡️ | Security filtering | Uses DevSkim and excludes files with actionable findings. |
@@ -59,14 +59,14 @@ Use the built-in help whenever you need to check available commands and options:
 codemap --help
 ```
 
-### 🔀 Include and Ignore
+### 🔀 Include and Exclude
 
-Use `--include` to select files and `--ignore` to remove paths from that selection:
+Use `--include` to select files and `--exclude` to remove paths from that selection:
 
 ```bash
 codemap \
 	--include "src/**/*.cs,README.md" \
-	--ignore "**/bin/**,**/obj/**" \
+	--exclude "**/bin/**,**/obj/**" \
 	--format markdown \
 	--output source-context.md
 ```
@@ -142,10 +142,10 @@ codemap --help
 | `--remote-branch` | branch | Branch to clone when using `--remote`. |
 | `--config` | path | Configuration JSON file. Without this option, codemap searches for `codemap.json` and `codemap.config.json`. |
 | `--include` | comma-separated globs | Include only matching paths, for example `**/*.cs,**/*.md`. |
-| `--ignore` | comma-separated globs | Add ignore patterns for this run. |
+| `--exclude` | comma-separated globs | Add exclusion patterns for this run. |
 | `--format` | `xml`, `markdown`, `md`, `json`, `plain`, `txt` | Output format. Defaults to Markdown. |
 | `--output` | path | Output file path. Defaults to `codemap-output.md`. |
-| `--no-summary` | flag | Remove file count and token summary from structured output. |
+| `--no-summary` | flag | Remove file count and in  summary from structured output. |
 | `--no-tree` | flag | Remove the directory/file listing from structured output. |
 | `--line-numbers` | flag | Prefix each output line with its line number. |
 | `--remove-comments` | flag | Remove common `//` and `/* ... */` comments before rendering. |
@@ -171,7 +171,7 @@ Configuration uses JSON. codemap automatically loads `codemap.json` or `codemap.
 	"outputPath": "artifacts/repository.md",
 	"format": "Markdown",
 	"includePatterns": ["**/*.cs", "**/*.md"],
-	"ignorePatterns": ["**/test-data/**"],
+	"excludePatterns": ["**/test-data/**"],
 	"includeFileSummary": true,
 	"includeDirectoryStructure": true,
 	"showLineNumbers": false,
@@ -187,111 +187,25 @@ Configuration uses JSON. codemap automatically loads `codemap.json` or `codemap.
 }
 ```
 
-Command-line values override configuration values. For list options such as `--include` and `--ignore`, the command-line value replaces the configured list.
+Command-line values override configuration values. For list options such as `--include` and `--exclude`, the command-line value replaces the configured list.
 
 ## Advanced Capabilities
 
-The sections below explain behavior that is useful when tuning output for a larger repository or an automated workflow.
+### Exclude
 
-### 🎯 Include and Ignore Rules
+Use `.ignore` to keep repository-specific files out of generated context, such as local notes, logs, fixtures, or generated output. Place it in the source root and add one glob per line; codemap also reads `.gitignore`, supports comments and ordered rules, and uses `!` to re-include a matching path. Common generated directories are excluded automatically.
 
-codemap always skips these generated or repository directories:
+### Security
 
-```text
-.git  bin  obj  node_modules  dist  coverage
-```
+Use `--security-check` when the source may contain credentials, unsafe cryptography, or other known security problems. codemap scans original UTF-8 files before cleanup, omits files with actionable DevSkim findings instead of stopping the entire pack, and reports excluded paths in the console and result model.
 
-It also reads these files from the source root, in this order:
+### Tokens
 
-```text
-.gitignore
-.ignore
-```
+Token counts help estimate how much context an AI tool will receive. codemap reports per-file and final-output counts using the GPT-4-compatible `cl100k_base` encoding; use `--token-budget` to reject oversized output, `--max-file-size` to skip large files, or `--split-output` to create smaller parts.
 
-Patterns are evaluated in order. A pattern ignores a matching path; a pattern beginning with `!` re-includes it.
+### Workflow
 
-```gitignore
-# Ignore generated files
-generated/
-
-# Keep one useful fixture
-!generated/example.cs
-
-# Ignore all logs
-*.log
-```
-
-Include patterns are applied after ignore rules. Common examples:
-
-```text
-**/*.cs       all C# files at any depth
-src/**        everything under src
-*.md          Markdown files at any directory depth
-```
-
-### 🛡️ Security Scanning
-
-`--security-check` uses Microsoft DevSkim embedded rules. codemap scans the original UTF-8 source before cleanup transformations. Files with actionable DevSkim findings are excluded from the packed result instead of causing the entire operation to fail.
-
-Excluded paths are reported on the console and exposed through the result model. Use this mode when creating context from repositories that may contain credentials, weak cryptography, or other known security patterns.
-
-### 📝 Output Formats
-
-### Markdown
-
-Markdown includes a repository summary, file listing, per-file token counts, language-aware code fences, and optional Git sections. It is the most convenient format for humans and chat-based AI tools.
-
-### XML
-
-XML contains a `codemap` root, summary attributes, directory structure, file elements, and optional Git metadata. It is useful for structured downstream processing.
-
-### JSON
-
-JSON contains summary data, file records, excluded security paths, and optional Git metadata. Each file includes its relative path, content, character count, line count, and token count.
-
-### Plain text
-
-Plain text emits each file under a clear path separator. It is useful for tools that do not parse Markdown, XML, or JSON.
-
-### 🔢 Token Counts and Limits
-
-codemap uses the GPT-4-compatible `cl100k_base` tokenizer from `Microsoft.ML.Tokenizers`. Each packed file has a token count, and the final rendered output has an aggregate count.
-
-`--token-budget` validates the final rendered output. If the output is too large, codemap returns an error rather than silently producing an incomplete result. Use `--include`, `--ignore`, `--max-file-size`, or `--split-output` to control size.
-
-### 🌐 Remote Repositories, Git Metadata, and Watch Mode
-
-Clone and pack a GitHub repository:
-
-```bash
-codemap \
-	--remote microsoft/generative-ai-for-beginners \
-	--remote-branch main \
-	--format markdown \
-	--output repository.md
-```
-
-Use a normal URL when preferred:
-
-```bash
-codemap \
-	--remote https://github.com/microsoft/TypeScript.git \
-	--include-diffs \
-	--include-logs \
-	--include-logs-count 10
-```
-
-For a local repository:
-
-```bash
-codemap --include-diffs --include-logs
-```
-
-Watch mode reports changes but does not automatically repack:
-
-```bash
-codemap --watch
-```
+Use `--remote` when the repository is not available locally; codemap clones it into a temporary directory and packs the selected branch. For repository history, `--include-diffs` adds current changes and `--include-logs` adds recent commits. `--watch` monitors a local source tree and reports changes so you can run codemap again.
 
 # 🌟 Support
 

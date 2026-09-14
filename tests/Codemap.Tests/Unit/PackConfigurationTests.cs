@@ -21,7 +21,7 @@ public sealed class PackConfigurationTests
     }
 
     [Fact]
-    public async Task PackAsync_UsesGitignoreAndIgnoreFiles()
+    public async Task PackAsync_UsesGitignoreAndExcludeFiles()
     {
         using var fixture = new TemporaryDirectory();
         await File.WriteAllTextAsync(Path.Combine(fixture.Path, ".gitignore"), "*.generated.cs\nprivate/\n");
@@ -38,7 +38,7 @@ public sealed class PackConfigurationTests
     }
 
     [Fact]
-    public async Task PackAsync_UsesIgnoreFilesAndSupportsNegation()
+    public async Task PackAsync_UsesExcludeFilesAndSupportsNegation()
     {
         using var fixture = new TemporaryDirectory();
         await File.WriteAllTextAsync(Path.Combine(fixture.Path, ".ignore"), "generated/\n!generated/keep.cs\n");
