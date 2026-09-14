@@ -10,7 +10,7 @@
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>codemap</ToolCommandName>
     <PackageId>Codemap.Cli</PackageId>
-    <Version>1.0.2</Version>
+    <Version>1.0.4</Version>
     <Authors>Meysam Hadeli</Authors>
     <Description>A command-line tool that scans repositories and produces deterministic, AI-ready context in Markdown, JSON, XML, or plain text, with filtering, Git metadata, token budgets, and security scanning.</Description>
     <PackageTags>ai;repository;context;code;dotnet</PackageTags>
