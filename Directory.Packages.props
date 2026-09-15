@@ -9,6 +9,7 @@
     <PackageVersion Include="Microsoft.ML.Tokenizers" Version="2.0.0" />
     <PackageVersion Include="Microsoft.ML.Tokenizers.Data.Cl100kBase" Version="2.0.0" />
     <PackageVersion Include="Shouldly" Version="4.3.0" />
+    <PackageVersion Include="TextCopy" Version="6.2.1" />
     <PackageVersion Include="xunit.v3" Version="4.0.0" />
   </ItemGroup>
 </Project>

@@ -7,7 +7,7 @@
 
 codemap follows a small pipeline so each stage can evolve independently:
 
-Users can run `codemap --help` at any time to display all commands and options directly in the terminal.
+Users can run `codemap --help` or `codemap -h` at any time to display all commands and options directly in the terminal. `codemap stdout` or `codemap -s` prints packed content without creating a file, while `codemap clipboard` or `codemap -c` copies it through TextCopy. Primary source, selection, and output options also have short aliases documented in the [user guide](../README.md#command-reference).
 
 ```mermaid
 flowchart LR

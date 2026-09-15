@@ -8,10 +8,33 @@ public sealed class CliIntegrationTests
     public async Task Cli_Help_ReturnsUsage()
     {
         var result = await RunCliAsync("--help");
+        var clipboardHelp = await RunCliAsync("-c", "--help");
 
         result.ExitCode.ShouldBe(0);
         result.StandardOutput.ShouldContain("codemap [options]");
         result.StandardOutput.ShouldContain("--help");
+        clipboardHelp.ExitCode.ShouldBe(0);
+        clipboardHelp.StandardOutput.ShouldContain("clipboard");
+    }
+
+    [Fact]
+    public async Task Cli_ShortAliases_WorkForHelpVersionFormatAndOutput()
+    {
+        var helpResult = await RunCliAsync("-h");
+        var versionResult = await RunCliAsync("-v");
+
+        helpResult.ExitCode.ShouldBe(0);
+        versionResult.ExitCode.ShouldBe(0, versionResult.StandardError);
+        Version.TryParse(versionResult.StandardOutput.Trim(), out _).ShouldBeTrue();
+
+        using var fixture = new TemporaryDirectory();
+        await File.WriteAllTextAsync(Path.Combine(fixture.Path, "sample.cs"), "class Sample {}\n");
+        var outputPath = Path.Combine(fixture.Path, "result.json");
+
+        var packResult = await RunCliInDirectoryAsync(fixture.Path, "-f", "json", "-o", outputPath);
+
+        packResult.ExitCode.ShouldBe(0, packResult.StandardError);
+        (await File.ReadAllTextAsync(outputPath)).ShouldContain("\"files\"");
     }
 
     [Fact]
@@ -39,6 +62,21 @@ public sealed class CliIntegrationTests
     }
 
     [Fact]
+    public async Task Cli_StdoutCommand_PrintsContentWithoutCreatingOutputFile()
+    {
+        using var fixture = new TemporaryDirectory();
+        await File.WriteAllTextAsync(Path.Combine(fixture.Path, "sample.cs"), "class Sample {}\n");
+        var outputPath = Path.Combine(fixture.Path, "should-not-exist.md");
+
+        var result = await RunCliInDirectoryAsync(fixture.Path, "-s", "-o", outputPath);
+
+        result.ExitCode.ShouldBe(0, result.StandardError);
+        result.StandardOutput.ShouldContain("class Sample {}");
+        result.StandardOutput.ShouldNotContain("Packed ");
+        File.Exists(outputPath).ShouldBeFalse();
+    }
+
+    [Fact]
     public async Task Cli_ExcludesMatchingFiles()
     {
         using var fixture = new TemporaryDirectory();
@@ -53,6 +91,37 @@ public sealed class CliIntegrationTests
         var output = await File.ReadAllTextAsync(outputPath);
         output.ShouldContain("keep.cs");
         output.ShouldNotContain("secret.cs");
+    }
+
+    [Fact]
+    public async Task Cli_ShortAliases_WorkForIncludeAndExclude()
+    {
+        using var fixture = new TemporaryDirectory();
+        await File.WriteAllTextAsync(Path.Combine(fixture.Path, "keep.cs"), "class Keep {}\n");
+        await File.WriteAllTextAsync(Path.Combine(fixture.Path, "secret.cs"), "class Secret {}\n");
+        var outputPath = Path.Combine(fixture.Path, "result.json");
+
+        var result = await RunCliInDirectoryAsync(
+            fixture.Path, "-i", "**/*.cs", "-e", "secret.cs", "-f", "json", "-o", outputPath);
+
+        result.ExitCode.ShouldBe(0, result.StandardError);
+        var output = await File.ReadAllTextAsync(outputPath);
+        output.ShouldContain("keep.cs");
+        output.ShouldNotContain("secret.cs");
+    }
+
+    [Fact]
+    public async Task Cli_ShortAlias_WorksForTokenBudget()
+    {
+        using var fixture = new TemporaryDirectory();
+        await File.WriteAllTextAsync(Path.Combine(fixture.Path, "sample.cs"), "class Sample {}\n");
+        var outputPath = Path.Combine(fixture.Path, "result.json");
+
+        var result = await RunCliInDirectoryAsync(
+            fixture.Path, "-t", "1", "-f", "json", "-o", outputPath);
+
+        result.ExitCode.ShouldBe(1);
+        result.StandardError.ShouldContain("token budget");
     }
 
     [Fact]
@@ -97,7 +166,7 @@ public sealed class CliIntegrationTests
         await File.WriteAllTextAsync(Path.Combine(fixture.Path, "sample.cs"), "class Sample {}\n");
         var outputPath = Path.Combine(fixture.Path, "watch.xml");
         var result = await RunCliUntilOutputAsync(
-            fixture.Path, new[] { "--output", outputPath, "--watch" }, "Watching for changes.");
+            fixture.Path, new[] { "--output", outputPath, "-w" }, "Watching for changes.");
 
         result.StandardOutput.ShouldContain("Watching for changes.");
     }

@@ -1,9 +1,21 @@
 ﻿using Codemap.Core;
 using Codemap.Cli;
 using System.Text.Json;
+using TextCopy;
 
 var arguments = args.ToList();
-if (arguments.Contains("--version", StringComparer.Ordinal))
+var outputCommand = arguments.FirstOrDefault() switch
+{
+	"stdout" or "-s" => "stdout",
+	"clipboard" or "-c" => "clipboard",
+	_ => "file"
+};
+if (outputCommand is not "file")
+{
+	arguments.RemoveAt(0);
+}
+
+if (HasFlag(arguments, "--version", "-v"))
 {
 	var informationalVersion = typeof(Program).Assembly
 		.GetCustomAttributes(typeof(System.Reflection.AssemblyInformationalVersionAttribute), inherit: false)
@@ -14,17 +26,17 @@ if (arguments.Contains("--version", StringComparer.Ordinal))
 	return 0;
 }
 
-if (arguments.Contains("--help", StringComparer.Ordinal))
+if (HasFlag(arguments, "--help", "-h"))
 {
 	PrintHelp();
 	return 0;
 }
 
 var root = Directory.GetCurrentDirectory();
-var remote = GetOption(arguments, "--remote");
+var remote = GetOption(arguments, "--remote", "-r");
 var configPath = GetOption(arguments, "--config") ?? FindDefaultConfig(root);
-var include = GetOption(arguments, "--include");
-var exclude = GetOption(arguments, "--exclude");
+var include = GetOption(arguments, "--include", "-i");
+var exclude = GetOption(arguments, "--exclude", "-e");
 
 var options = new PackOptions
 {
@@ -36,21 +48,21 @@ var options = new PackOptions
 	ShowLineNumbers = arguments.Contains("--line-numbers"),
 	RemoveComments = arguments.Contains("--remove-comments"),
 	RemoveEmptyLines = arguments.Contains("--remove-empty-lines"),
-	TokenBudget = GetIntOption(arguments, "--token-budget"),
-	MaxFileSizeBytes = GetLongOption(arguments, "--max-file-size"),
+	TokenBudget = GetIntOption(arguments, "--token-budget", "-t"),
+	MaxFileSizeBytes = GetLongOption(arguments, "--max-file-size", "-m"),
 	EnableSecurityCheck = arguments.Contains("--security-check"),
 	IncludeGitDiffs = arguments.Contains("--include-diffs"),
 	IncludeGitLogs = arguments.Contains("--include-logs"),
 	GitLogCount = GetIntOption(arguments, "--include-logs-count") ?? 20,
 	SplitOutputBytes = GetIntOption(arguments, "--split-output"),
-	Format = ParseFormat(GetOption(arguments, "--format"))
+	Format = ParseFormat(GetOption(arguments, "--format", "-f"))
 };
 
 try
 {
 	var sourceRoot = remote is null
 		? root
-		: await RepositorySource.ResolveAsync(remote, GetOption(arguments, "--remote-branch"), CancellationToken.None);
+		: await RepositorySource.ResolveAsync(remote, GetOption(arguments, "--remote-branch", "-b"), CancellationToken.None);
 	root = sourceRoot;
 	options = options with { RootDirectory = sourceRoot };
 	if (configPath is not null)
@@ -60,8 +72,8 @@ try
 
 	options = options with
 	{
-		OutputPath = GetOption(arguments, "--output") ?? options.OutputPath,
-		Format = GetOption(arguments, "--format") is { } format ? ParseFormat(format) : options.Format,
+		OutputPath = GetOption(arguments, "--output", "-o") ?? options.OutputPath,
+		Format = GetOption(arguments, "--format", "-f") is { } format ? ParseFormat(format) : options.Format,
 		IncludePatterns = include is null ? options.IncludePatterns : SplitPatterns(include),
 		ExcludePatterns = exclude is null ? options.ExcludePatterns : SplitPatterns(exclude),
 		IncludeFileSummary = arguments.Contains("--no-summary") ? false : options.IncludeFileSummary,
@@ -69,8 +81,8 @@ try
 		ShowLineNumbers = arguments.Contains("--line-numbers") || options.ShowLineNumbers,
 		RemoveComments = arguments.Contains("--remove-comments") || options.RemoveComments,
 		RemoveEmptyLines = arguments.Contains("--remove-empty-lines") || options.RemoveEmptyLines,
-		TokenBudget = GetIntOption(arguments, "--token-budget") ?? options.TokenBudget
-		,MaxFileSizeBytes = GetLongOption(arguments, "--max-file-size") ?? options.MaxFileSizeBytes
+		TokenBudget = GetIntOption(arguments, "--token-budget", "-t") ?? options.TokenBudget
+		,MaxFileSizeBytes = GetLongOption(arguments, "--max-file-size", "-m") ?? options.MaxFileSizeBytes
 		,EnableSecurityCheck = arguments.Contains("--security-check") || options.EnableSecurityCheck
 		,IncludeGitDiffs = arguments.Contains("--include-diffs") || options.IncludeGitDiffs
 		,IncludeGitLogs = arguments.Contains("--include-logs") || options.IncludeGitLogs
@@ -78,7 +90,21 @@ try
 	};
 
 	var result = await new CodePacker().PackAsync(options);
-	if (options.SplitOutputBytes is { } splitSize && splitSize > 0 && result.Content.Length > splitSize)
+	if (outputCommand is not "file" && options.SplitOutputBytes is > 0)
+	{
+		throw new InvalidOperationException("The stdout and clipboard commands cannot be combined with --split-output.");
+	}
+
+	if (outputCommand is "stdout")
+	{
+		Console.Write(result.Content);
+	}
+	else if (outputCommand is "clipboard")
+	{
+		await CopyToClipboardAsync(result.Content);
+		Console.Error.WriteLine($"Copied {result.Files.Count} files to the clipboard ({result.TokenCount} tokens).");
+	}
+	else if (options.SplitOutputBytes is { } splitSize && splitSize > 0 && result.Content.Length > splitSize)
 	{
 		var chunks = result.Content.Chunk(splitSize).ToArray();
 		for (var index = 0; index < chunks.Length; index++)
@@ -90,12 +116,15 @@ try
 	{
 		await File.WriteAllTextAsync(options.OutputPath, result.Content);
 	}
-	Console.WriteLine($"Packed {result.Files.Count} files into {options.OutputPath} ({result.TokenCount} tokens).");
+	if (outputCommand is "file")
+	{
+		Console.WriteLine($"Packed {result.Files.Count} files into {options.OutputPath} ({result.TokenCount} tokens).");
+	}
 	if (result.ExcludedFiles is { Count: > 0 })
 	{
-		Console.WriteLine($"Excluded {result.ExcludedFiles.Count} files with security findings: {string.Join(", ", result.ExcludedFiles)}");
+		Console.Error.WriteLine($"Excluded {result.ExcludedFiles.Count} files with security findings: {string.Join(", ", result.ExcludedFiles)}");
 	}
-	if (arguments.Contains("--watch"))
+	if (HasFlag(arguments, "--watch", "-w"))
 	{
 		using var watcher = new FileSystemWatcher(options.RootDirectory) { IncludeSubdirectories = true, EnableRaisingEvents = true };
 		FileSystemEventHandler notify = (_, _) => Console.WriteLine("Source changed. Run codemap again to refresh output.");
@@ -113,11 +142,19 @@ catch (Exception exception) when (exception is IOException or UnauthorizedAccess
 	return 1;
 }
 
-static string? GetOption(IReadOnlyList<string> arguments, string name)
+static bool HasFlag(IReadOnlyList<string> arguments, params string[] names) =>
+	names.Any(name => arguments.Contains(name, StringComparer.Ordinal));
+
+static async Task CopyToClipboardAsync(string content)
+{
+	await ClipboardService.SetTextAsync(content);
+}
+
+static string? GetOption(IReadOnlyList<string> arguments, params string[] names)
 {
 	for (var index = 0; index + 1 < arguments.Count; index++)
 	{
-		if (arguments[index].Equals(name, StringComparison.Ordinal))
+		if (names.Any(name => arguments[index].Equals(name, StringComparison.Ordinal)))
 		{
 			return arguments[index + 1];
 		}
@@ -128,15 +165,15 @@ static string? GetOption(IReadOnlyList<string> arguments, string name)
 
 static IReadOnlyList<string> SplitPatterns(string value) => value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
-static int? GetIntOption(IReadOnlyList<string> arguments, string name)
+static int? GetIntOption(IReadOnlyList<string> arguments, params string[] names)
 {
-	var value = GetOption(arguments, name);
+	var value = GetOption(arguments, names);
 	return value is null ? null : int.Parse(value, System.Globalization.CultureInfo.InvariantCulture);
 }
 
-static long? GetLongOption(IReadOnlyList<string> arguments, string name)
+static long? GetLongOption(IReadOnlyList<string> arguments, params string[] names)
 {
-	var value = GetOption(arguments, name);
+	var value = GetOption(arguments, names);
 	return value is null ? null : long.Parse(value, System.Globalization.CultureInfo.InvariantCulture);
 }
 
@@ -165,20 +202,22 @@ static void PrintHelp()
 	Console.WriteLine();
 	Console.WriteLine("Usage:");
 	Console.WriteLine("  codemap [options]");
+	Console.WriteLine("  codemap stdout, -s [options]   Print packed content to stdout");
+	Console.WriteLine("  codemap clipboard, -c [options] Copy packed content to clipboard");
 	Console.WriteLine();
 	Console.WriteLine("Source:");
-	Console.WriteLine("  --remote <url|owner/repo>     Clone a remote Git repository");
-	Console.WriteLine("  --remote-branch <branch>      Branch to clone");
+	Console.WriteLine("  -r, --remote <url|owner/repo> Clone a remote Git repository");
+	Console.WriteLine("  -b, --remote-branch <branch>  Branch to clone");
 	Console.WriteLine();
 	Console.WriteLine("Selection:");
-	Console.WriteLine("  --include <patterns>          Comma-separated include globs");
-	Console.WriteLine("  --exclude <patterns>          Comma-separated exclusion globs");
-	Console.WriteLine("  --max-file-size <bytes>       Skip larger files");
-	Console.WriteLine("  --config <path>               Configuration JSON file");
+	Console.WriteLine("  -i, --include <patterns>      Comma-separated include globs");
+	Console.WriteLine("  -e, --exclude <patterns>      Comma-separated exclusion globs");
+	Console.WriteLine("  -m, --max-file-size <bytes>   Skip larger files");
+	Console.WriteLine("  -c, --config <path>            Configuration JSON file");
 	Console.WriteLine();
 	Console.WriteLine("Output:");
-	Console.WriteLine("  --format <xml|markdown|json|plain>");
-	Console.WriteLine("  --output <path>               Output file (default: codemap-output.md)");
+	Console.WriteLine("  -f, --format <xml|markdown|json|plain>");
+	Console.WriteLine("  -o, --output <path>           Output file (default: codemap-output.md)");
 	Console.WriteLine("  --no-summary                  Omit summary metadata");
 	Console.WriteLine("  --no-tree                     Omit directory structure");
 	Console.WriteLine("  --split-output <bytes>        Split large output into numbered files");
@@ -188,15 +227,15 @@ static void PrintHelp()
 	Console.WriteLine("  --remove-comments             Remove common source comments");
 	Console.WriteLine("  --remove-empty-lines          Remove blank lines");
 	Console.WriteLine("  --line-numbers                Add line numbers");
-	Console.WriteLine("  --token-budget <count>        Fail when rendered output exceeds count");
+	Console.WriteLine("  -t, --token-budget <count>    Fail when rendered output exceeds count");
 	Console.WriteLine();
 	Console.WriteLine("Git and workflow:");
 	Console.WriteLine("  --include-diffs               Include git diff");
 	Console.WriteLine("  --include-logs                Include recent git commits");
 	Console.WriteLine("  --include-logs-count <count>  Number of commits (default: 20)");
-	Console.WriteLine("  --watch                       Report source changes");
-	Console.WriteLine("  --version                     Show the tool version");
-	Console.WriteLine("  --help                       Show this help");
+	Console.WriteLine("  -w, --watch                   Report source changes");
+	Console.WriteLine("  -v, --version                 Show the tool version");
+	Console.WriteLine("  -h, --help                    Show this help");
 	Console.WriteLine();
 	Console.WriteLine("Examples:");
 	Console.WriteLine("  codemap --format markdown --output repository.md");

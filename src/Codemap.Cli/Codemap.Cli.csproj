@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Codemap.Core\Codemap.Core.csproj" />
+    <PackageReference Include="TextCopy" />
     <None Include="..\..\README.md" Pack="true" PackagePath="README.md" />
   </ItemGroup>
 

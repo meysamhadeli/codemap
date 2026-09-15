@@ -29,13 +29,18 @@ Then run it from any directory with `codemap`.
 Running `codemap` without options scans the current directory. Change into the repository directory before running it.
 
 > [!TIP]
-> Start with `codemap --format markdown --output repository.md` to create a shareable repository snapshot.
+> **Quick Start**
+>
+> - **Save a snapshot:** `codemap --format markdown --output repository.md`
+> - **Print without a file:** `codemap stdout --format markdown` or `codemap -s`
+> - **Copy to clipboard:** `codemap clipboard --format markdown` or `codemap -c`
 
 ## Features
 
 | | Capability | What it does |
-| --- | --- | --- |
+| --- | --- | --- | --- |
 | 📦 | AI-ready packaging | Combines selected source files into one readable artifact. |
+| 📤 | Three output modes | Writes to a file, prints to stdout, or copies directly to the clipboard. |
 | 🧭 | Deterministic discovery | Processes files in stable path order for repeatable output. |
 | 🎯 | Include and exclude rules | Filters paths with globs, `.gitignore`, and `.ignore`. |
 | 🌿 | Git awareness | Includes diffs and recent commits when requested. |
@@ -72,6 +77,8 @@ codemap \
 ```
 
 codemap also reads `.gitignore` and `.ignore` automatically.
+
+The same selection can use short aliases: `codemap -i "src/**/*.cs" -e "**/bin/**,**/obj/**" -f markdown -o source-context.md`.
 
 ### 🛡️ Security Check
 
@@ -128,6 +135,10 @@ General form:
 
 ```text
 codemap [options]
+codemap stdout [options]
+codemap clipboard [options]
+codemap -s [options]
+codemap -c [options]
 ```
 
 Show the built-in command reference at any time:
@@ -136,29 +147,31 @@ Show the built-in command reference at any time:
 codemap --help
 ```
 
-| Option | Value | Description |
-| --- | --- | --- |
-| `--remote` | URL or `owner/repository` | Clone a remote Git repository into a temporary directory before packing. |
-| `--remote-branch` | branch | Branch to clone when using `--remote`. |
-| `--config` | path | Configuration JSON file. Without this option, codemap searches for `codemap.json` and `codemap.config.json`. |
-| `--include` | comma-separated globs | Include only matching paths, for example `**/*.cs,**/*.md`. |
-| `--exclude` | comma-separated globs | Add exclusion patterns for this run. |
-| `--format` | `xml`, `markdown`, `md`, `json`, `plain`, `txt` | Output format. Defaults to Markdown. |
-| `--output` | path | Output file path. Defaults to `codemap-output.md`. |
-| `--no-summary` | flag | Remove file count and in  summary from structured output. |
-| `--no-tree` | flag | Remove the directory/file listing from structured output. |
-| `--line-numbers` | flag | Prefix each output line with its line number. |
-| `--remove-comments` | flag | Remove common `//` and `/* ... */` comments before rendering. |
-| `--remove-empty-lines` | flag | Remove blank lines after other transformations. |
-| `--security-check` | flag | Scan original files with DevSkim and exclude files with findings. |
-| `--max-file-size` | bytes | Skip files larger than this size before reading them. |
-| `--token-budget` | count | Fail if the final rendered output exceeds this token count. |
-| `--include-diffs` | flag | Include `git diff` output. |
-| `--include-logs` | flag | Include recent one-line Git commits. |
-| `--include-logs-count` | count | Number of commits to include. Defaults to 20. |
-| `--split-output` | bytes | Split output into numbered files when the rendered content exceeds this size. |
-| `--watch` | flag | Watch the source tree and print a notification when files change. Run codemap again to regenerate output. |
-| `--help` | flag | Show command usage, options, and examples without packing. |
+| Option | Alias | Value | Description |
+| --- | --- | --- | --- |
+| `--remote` | `-r` | URL or `owner/repository` | Clone a remote Git repository into a temporary directory before packing. |
+| `--remote-branch` | `-b` | branch | Branch to clone when using `--remote`. |
+| `--config` | - | path | Configuration JSON file. Without this option, codemap searches for `codemap.json` and `codemap.config.json`. |
+| `--include` | `-i` | comma-separated globs | Include only matching paths, for example `**/*.cs,**/*.md`. |
+| `--exclude` | `-e` | comma-separated globs | Add exclusion patterns for this run. |
+| `--format` | `-f` | `xml`, `markdown`, `md`, `json`, `plain`, `txt` | Output format. Defaults to Markdown. |
+| `--output` | `-o` | path | Output file path. Defaults to `codemap-output.md`. |
+| `--max-file-size` | `-m` | bytes | Skip files larger than this size before reading them. |
+| `--token-budget` | `-t` | count | Fail if the final rendered output exceeds this token count. |
+| `--no-summary` | - | flag | Remove file count and token summary from structured output. |
+| `--no-tree` | - | flag | Remove the directory/file listing from structured output. |
+| `--line-numbers` | - | flag | Prefix each output line with its line number. |
+| `--remove-comments` | - | flag | Remove common `//` and `/* ... */` comments before rendering. |
+| `--remove-empty-lines` | - | flag | Remove blank lines after other transformations. |
+| `--security-check` | - | flag | Scan original files with DevSkim and exclude files with findings. |
+| `--include-diffs` | - | flag | Include `git diff` output. |
+| `--include-logs` | - | flag | Include recent one-line Git commits. |
+| `--include-logs-count` | - | count | Number of commits to include. Defaults to 20. |
+| `--split-output` | - | bytes | Split output into numbered files when the rendered content exceeds this size. |
+| `--watch` | `-w` | flag | Watch the source tree and print a notification when files change. Run codemap again to regenerate output. |
+| `--version` | `-v` | flag | Show the tool version. |
+| `--help` | `-h` | flag | Show command usage, options, and examples without packing. |
+
 
 Boolean options are enabled by writing the flag.
 
