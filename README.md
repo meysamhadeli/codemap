@@ -38,7 +38,7 @@ Running `codemap` without options scans the current directory. Change into the r
 ## Features
 
 | | Capability | What it does |
-| --- | --- | --- | --- |
+| --- | --- | --- |
 | 📦 | AI-ready packaging | Combines selected source files into one readable artifact. |
 | 📤 | Three output modes | Writes to a file, prints to stdout, or copies directly to the clipboard. |
 | 🧭 | Deterministic discovery | Processes files in stable path order for repeatable output. |
