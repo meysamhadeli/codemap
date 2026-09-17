@@ -18,6 +18,34 @@ public sealed class CliIntegrationTests
     }
 
     [Fact]
+    public async Task Cli_ApplyOption_PreflightRejectsWithoutInteractiveApproval()
+    {
+        using var fixture = new TemporaryDirectory();
+        var patchPath = Path.Combine(fixture.Path, "changes.patch");
+        await File.WriteAllTextAsync(patchPath, "diff --git a/sample.txt b/sample.txt\nnew file mode 100644\nindex 0000000..257cc56\n--- /dev/null\n+++ b/sample.txt\n@@ -0,0 +1 @@\n+applied\n");
+
+        var result = await RunCliInDirectoryAsync(fixture.Path, "--apply", patchPath);
+
+        result.ExitCode.ShouldBe(1);
+        result.StandardOutput.ShouldContain("Git patch preview:");
+        result.StandardError.ShouldContain("approval required");
+        File.Exists(Path.Combine(fixture.Path, "sample.txt")).ShouldBeFalse();
+    }
+
+    [Fact]
+    public async Task Cli_ApplyAlias_RejectsNonDiffInput()
+    {
+        using var fixture = new TemporaryDirectory();
+        var patchPath = Path.Combine(fixture.Path, "changes.patch");
+        await File.WriteAllTextAsync(patchPath, "#!/bin/bash\nset -e\necho unsafe\n");
+
+        var result = await RunCliInDirectoryAsync(fixture.Path, "-a", patchPath);
+
+        result.ExitCode.ShouldBe(1);
+        result.StandardError.ShouldContain("no file changes");
+    }
+
+    [Fact]
     public async Task Cli_ShortAliases_WorkForHelpVersionFormatAndOutput()
     {
         var helpResult = await RunCliAsync("-h");
@@ -74,6 +102,36 @@ public sealed class CliIntegrationTests
         result.StandardOutput.ShouldContain("class Sample {}");
         result.StandardOutput.ShouldNotContain("Packed ");
         File.Exists(outputPath).ShouldBeFalse();
+    }
+
+    [Fact]
+    public async Task Cli_PatchMode_PrefixesMarkdownContextWithPatchInstructions()
+    {
+        using var fixture = new TemporaryDirectory();
+        await File.WriteAllTextAsync(Path.Combine(fixture.Path, "sample.cs"), "class Sample {}\n");
+
+        var result = await RunCliInDirectoryAsync(fixture.Path, "stdout", "-p");
+
+        result.ExitCode.ShouldBe(0, result.StandardError);
+        result.StandardOutput.ShouldStartWith("# Git Patch Generation Instructions");
+        result.StandardOutput.ShouldContain("diff --git a/");
+        result.StandardOutput.ShouldContain("class Sample {}");
+    }
+
+    [Theory]
+    [InlineData("json", "\"patchInstructions\"")]
+    [InlineData("xml", "<patch_instructions>")]
+    [InlineData("plain", "# Git Patch Generation Instructions")]
+    public async Task Cli_PatchMode_SupportsAllOutputFormats(string format, string expectedMarker)
+    {
+        using var fixture = new TemporaryDirectory();
+        await File.WriteAllTextAsync(Path.Combine(fixture.Path, "sample.cs"), "class Sample {}\n");
+
+        var result = await RunCliInDirectoryAsync(fixture.Path, "stdout", "-p", "--format", format);
+
+        result.ExitCode.ShouldBe(0, result.StandardError);
+        result.StandardOutput.ShouldContain(expectedMarker);
+        result.StandardOutput.ShouldContain("class Sample {}");
     }
 
     [Fact]

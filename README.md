@@ -7,9 +7,8 @@
 ## Contents
 
 - [Installation](#installation)
-- [Features](#features-what-codemap-provides)
-- [How to run](#how-to-run)
-- [Requirements](#requirements)
+- [Features](#features)
+- [How to Run](#how-to-run)
 - [Command reference](#command-reference)
 - [Configuration](#configuration)
 - [Advanced capabilities](#advanced-capabilities)
@@ -34,6 +33,8 @@ Running `codemap` without options scans the current directory. Change into the r
 > - **Save a snapshot:** `codemap --format markdown --output repository.md`
 > - **Print without a file:** `codemap stdout --format markdown` or `codemap -s`
 > - **Copy to clipboard:** `codemap clipboard --format markdown` or `codemap -c`
+> - **Generate patch context:** `codemap stdout --patch` or `codemap -p`
+> - **Preview and apply a patch:** `codemap --apply changes.patch` or `codemap -a changes.patch`
 
 ## Features
 
@@ -44,10 +45,11 @@ Running `codemap` without options scans the current directory. Change into the r
 | 🧭 | Deterministic discovery | Processes files in stable path order for repeatable output. |
 | 🎯 | Include and exclude rules | Filters paths with globs, `.gitignore`, and `.ignore`. |
 | 🌿 | Git awareness | Includes diffs and recent commits when requested. |
+| 🩹 | Patch mode | Adds instructions for generating standard Git diffs with `--patch` or `-p`. |
 | 🔢 | Token counts | Reports GPT-4-compatible `cl100k_base` counts per file and overall. |
 | 🛡️ | Security filtering | Uses DevSkim and excludes files with actionable findings. |
 | 🧹 | Content cleanup | Removes comments or empty lines and can add line numbers. |
-| 📝 | Multiple formats | Writes Markdown, XML, JSON, or plain text. |
+| 📝 | Multiple formats | Writes Markdown, XML, JSON, or plain text; patch mode preserves the selected format. |
 | 📏 | Size controls | Supports file-size limits, token budgets, and split output. |
 | 🌐 | Repository sources | Packs a local directory or clones a remote Git repository. |
 | 👀 | Workflow support | Watches a directory for changes or exposes a reusable C# library. |
@@ -80,18 +82,32 @@ codemap also reads `.gitignore` and `.ignore` automatically.
 
 The same selection can use short aliases: `codemap -i "src/**/*.cs" -e "**/bin/**,**/obj/**" -f markdown -o source-context.md`.
 
-### 🛡️ Security Check
+### 🩹 Patch and Apply
 
-Use DevSkim to exclude files with actionable security findings before they enter the generated context:
+Generate repository context with patch-generation instructions:
 
 ```bash
-codemap \
-	--security-check \
-	--format markdown \
-	--output reviewed-context.md
+codemap stdout --patch
+codemap stdout -p --format markdown
 ```
 
-codemap reports excluded files in the terminal. Node.js and npm are not required.
+Send that context to an AI provider and ask it to return one standard unified Git diff. Save the response as `changes.patch`. Do not execute AI output as a shell script.
+
+Review and apply the diff from the repository root:
+
+```bash
+codemap --apply changes.patch
+```
+
+The command:
+
+1. Prints the complete diff preview.
+2. Validates it with `git apply --check`.
+3. Lists each changed repository-relative file.
+4. Requests approval for every file.
+5. Applies the diff with `git apply` only after all approvals.
+
+Git is required for patch application. Rejecting any file cancels the operation without applying changes.
 
 ### 📝 Format
 
@@ -109,6 +125,19 @@ codemap --format xml --output repository.xml
 codemap --format plain --output repository.txt
 ```
 
+### 🛡️ Security Check
+
+Use DevSkim to exclude files with actionable security findings before they enter the generated context:
+
+```bash
+codemap \
+	--security-check \
+	--format markdown \
+	--output reviewed-context.md
+```
+
+codemap reports excluded files in the terminal. Node.js and npm are not required.
+
 ### 🌐 Remote
 
 codemap can clone a repository and pack a selected branch:
@@ -122,12 +151,6 @@ codemap \
 ```
 
 The same command accepts a complete Git URL. Git must be installed and available on `PATH` for remote repositories and Git metadata.
-
-## Requirements
-
-- .NET SDK 10 or newer.
-- Git only when using `--remote`, `--include-diffs`, or `--include-logs`.
-- Node.js and npm are not required. Security scanning is implemented with DevSkim for .NET.
 
 ## Command Reference
 
@@ -147,31 +170,35 @@ Show the built-in command reference at any time:
 codemap --help
 ```
 
-| Option | Alias | Value | Description |
+| Command or option | Alias | Value | Description |
 | --- | --- | --- | --- |
-| `--remote` | `-r` | URL or `owner/repository` | Clone a remote Git repository into a temporary directory before packing. |
-| `--remote-branch` | `-b` | branch | Branch to clone when using `--remote`. |
-| `--config` | - | path | Configuration JSON file. Without this option, codemap searches for `codemap.json` and `codemap.config.json`. |
-| `--include` | `-i` | comma-separated globs | Include only matching paths, for example `**/*.cs,**/*.md`. |
+| `codemap [options]` | - | - | Pack the current directory into the configured output. |
+| `codemap stdout [options]` | `-s` | - | Write packed output to standard output. |
+| `codemap clipboard [options]` | `-c` | - | Copy packed output to the clipboard. |
+| `--include` | `-i` | comma-separated globs | Include only matching paths. |
 | `--exclude` | `-e` | comma-separated globs | Add exclusion patterns for this run. |
 | `--format` | `-f` | `xml`, `markdown`, `md`, `json`, `plain`, `txt` | Output format. Defaults to Markdown. |
 | `--output` | `-o` | path | Output file path. Defaults to `codemap-output.md`. |
 | `--max-file-size` | `-m` | bytes | Skip files larger than this size before reading them. |
 | `--token-budget` | `-t` | count | Fail if the final rendered output exceeds this token count. |
+| `--apply` | `-a` | patch file | Preview, validate, request approval for, and apply a unified Git diff. |
+| `--patch` | `-p` | flag | Add Git patch-generation instructions to the output. |
+| `--watch` | `-w` | flag | Watch a directory and report changes. |
+| `--version` | `-v` | flag | Show the tool version. |
+| `--config` | - | path | Configuration JSON file. Without this option, codemap searches for `codemap.json` and `codemap.config.json`. |
+| `--help` | `-h` | flag | Show command usage, options, and examples. |
+| `--remote` | `-r` | URL or `owner/repository` | Clone a remote Git repository into a temporary directory before packing. |
+| `--remote-branch` | `-b` | branch | Branch to clone when using `--remote`. |
 | `--no-summary` | - | flag | Remove file count and token summary from structured output. |
 | `--no-tree` | - | flag | Remove the directory/file listing from structured output. |
 | `--line-numbers` | - | flag | Prefix each output line with its line number. |
-| `--remove-comments` | - | flag | Remove common `//` and `/* ... */` comments before rendering. |
+| `--remove-comments` | - | flag | Remove common comments before rendering. |
 | `--remove-empty-lines` | - | flag | Remove blank lines after other transformations. |
 | `--security-check` | - | flag | Scan original files with DevSkim and exclude files with findings. |
 | `--include-diffs` | - | flag | Include `git diff` output. |
 | `--include-logs` | - | flag | Include recent one-line Git commits. |
 | `--include-logs-count` | - | count | Number of commits to include. Defaults to 20. |
 | `--split-output` | - | bytes | Split output into numbered files when the rendered content exceeds this size. |
-| `--watch` | `-w` | flag | Watch the source tree and print a notification when files change. Run codemap again to regenerate output. |
-| `--version` | `-v` | flag | Show the tool version. |
-| `--help` | `-h` | flag | Show command usage, options, and examples without packing. |
-
 
 Boolean options are enabled by writing the flag.
 
@@ -204,19 +231,15 @@ Command-line values override configuration values. For list options such as `--i
 
 ## Advanced Capabilities
 
-### Exclude
+### 🚫 Ignore
 
 Use `.ignore` to keep repository-specific files out of generated context, such as local notes, logs, fixtures, or generated output. Place it in the source root and add one glob per line; codemap also reads `.gitignore`, supports comments and ordered rules, and uses `!` to re-include a matching path. Common generated directories are excluded automatically.
 
-### Security
-
-Use `--security-check` when the source may contain credentials, unsafe cryptography, or other known security problems. codemap scans original UTF-8 files before cleanup, omits files with actionable DevSkim findings instead of stopping the entire pack, and reports excluded paths in the console and result model.
-
-### Tokens
+### 🔢 Token Counts
 
 Token counts help estimate how much context an AI tool will receive. codemap reports per-file and final-output counts using the GPT-4-compatible `cl100k_base` encoding; use `--token-budget` to reject oversized output, `--max-file-size` to skip large files, or `--split-output` to create smaller parts.
 
-### Workflow
+### 🔄 Workflow
 
 Use `--remote` when the repository is not available locally; codemap clones it into a temporary directory and packs the selected branch. For repository history, `--include-diffs` adds current changes and `--include-logs` adds recent commits. `--watch` monitors a local source tree and reports changes so you can run codemap again.
 

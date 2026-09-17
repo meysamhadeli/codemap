@@ -6,4 +6,10 @@
     <PackageReference Include="Microsoft.ML.Tokenizers.Data.Cl100kBase" />
   </ItemGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Include="Skills\Patch\SKILL.md">
+      <LogicalName>Codemap.Core.Skills.Patch.SKILL.md</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+
 </Project>

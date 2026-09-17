@@ -4,6 +4,16 @@ using System.Text.Json;
 using TextCopy;
 
 var arguments = args.ToList();
+var applyPatchPath = GetOption(arguments, "--apply", "-a");
+if (applyPatchPath is not null)
+{
+	var applyRoot = Directory.GetCurrentDirectory();
+	return await PatchApplier.ApplyAsync(
+		applyPatchPath,
+		applyRoot,
+		CancellationToken.None);
+}
+
 var outputCommand = arguments.FirstOrDefault() switch
 {
 	"stdout" or "-s" => "stdout",
@@ -33,6 +43,7 @@ if (HasFlag(arguments, "--help", "-h"))
 }
 
 var root = Directory.GetCurrentDirectory();
+var patchMode = HasFlag(arguments, "--patch", "-p");
 var remote = GetOption(arguments, "--remote", "-r");
 var configPath = GetOption(arguments, "--config") ?? FindDefaultConfig(root);
 var include = GetOption(arguments, "--include", "-i");
@@ -41,7 +52,7 @@ var exclude = GetOption(arguments, "--exclude", "-e");
 var options = new PackOptions
 {
 	RootDirectory = root,
-	OutputPath = "codemap-output.md",
+	OutputPath = patchMode ? "codemap-patch-context.md" : "codemap-output.md",
 	IncludePatterns = ["**/*"],
 	IncludeFileSummary = true,
 	IncludeDirectoryStructure = true,
@@ -90,6 +101,7 @@ try
 	};
 
 	var result = await new CodePacker().PackAsync(options);
+	var content = patchMode ? PatchContext.Wrap(result.Content, options.Format) : result.Content;
 	if (outputCommand is not "file" && options.SplitOutputBytes is > 0)
 	{
 		throw new InvalidOperationException("The stdout and clipboard commands cannot be combined with --split-output.");
@@ -97,16 +109,16 @@ try
 
 	if (outputCommand is "stdout")
 	{
-		Console.Write(result.Content);
+		Console.Write(content);
 	}
 	else if (outputCommand is "clipboard")
 	{
-		await CopyToClipboardAsync(result.Content);
+		await CopyToClipboardAsync(content);
 		Console.Error.WriteLine($"Copied {result.Files.Count} files to the clipboard ({result.TokenCount} tokens).");
 	}
-	else if (options.SplitOutputBytes is { } splitSize && splitSize > 0 && result.Content.Length > splitSize)
+	else if (options.SplitOutputBytes is { } splitSize && splitSize > 0 && content.Length > splitSize)
 	{
-		var chunks = result.Content.Chunk(splitSize).ToArray();
+		var chunks = content.Chunk(splitSize).ToArray();
 		for (var index = 0; index < chunks.Length; index++)
 		{
 			await File.WriteAllTextAsync($"{options.OutputPath}.{index + 1}", new string(chunks[index]));
@@ -114,7 +126,7 @@ try
 	}
 	else
 	{
-		await File.WriteAllTextAsync(options.OutputPath, result.Content);
+		await File.WriteAllTextAsync(options.OutputPath, content);
 	}
 	if (outputCommand is "file")
 	{
@@ -191,6 +203,7 @@ static string? FindDefaultConfig(string root)
 static OutputFormat ParseFormat(string? value) => value?.ToLowerInvariant() switch
 {
 	"markdown" or "md" => OutputFormat.Markdown,
+	"xml" => OutputFormat.Xml,
 	"plain" or "txt" => OutputFormat.Plain,
 	"json" => OutputFormat.Json,
 	_ => OutputFormat.Markdown
@@ -218,9 +231,11 @@ static void PrintHelp()
 	Console.WriteLine("Output:");
 	Console.WriteLine("  -f, --format <xml|markdown|json|plain>");
 	Console.WriteLine("  -o, --output <path>           Output file (default: codemap-output.md)");
+	Console.WriteLine("  -a, --apply <patch-file>      Preview, approve, and apply a Git diff");
 	Console.WriteLine("  --no-summary                  Omit summary metadata");
 	Console.WriteLine("  --no-tree                     Omit directory structure");
 	Console.WriteLine("  --split-output <bytes>        Split large output into numbered files");
+	Console.WriteLine("  -p, --patch                   Add patch-generation instructions in selected format");
 	Console.WriteLine();
 	Console.WriteLine("Transformations and limits:");
 	Console.WriteLine("  --security-check              Exclude files with DevSkim findings");
