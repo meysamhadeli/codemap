@@ -1,32 +1,15 @@
 name-template: 'v$RESOLVED_VERSION'
 tag-template: 'v$RESOLVED_VERSION'
-change-template: '- $TITLE (#$NUMBER) @$AUTHOR'
+change-template: '- $TITLE @$AUTHOR'
 change-title-escapes: '\<*_&'
 
 header: |
-  ## Codemap $RESOLVED_VERSION
-
-  Codemap packages repositories into focused context for AI tools and developers.
-
-  Install or update the CLI tool:
-
-  ```bash
-  dotnet tool install --global Codemap.Cli --version $RESOLVED_VERSION
-  ```
+  ## What Changed 👀
 
 template: |
   $CHANGES
 
-  ## Installation
-
-  ```bash
-  dotnet tool install --global Codemap.Cli --version $RESOLVED_VERSION
-  ```
-
-  ## Links
-
-  - [NuGet package](https://www.nuget.org/packages/Codemap.Cli/$RESOLVED_VERSION)
-  - [Full changelog](https://github.com/$OWNER/$REPOSITORY/compare/$PREVIOUS_TAG...v$RESOLVED_VERSION)
+  **Full Changelog**: https://github.com/$OWNER/$REPOSITORY/compare/$PREVIOUS_TAG...v$RESOLVED_VERSION
 
 categories:
   - title: '🚀 Features'
@@ -37,26 +20,17 @@ categories:
     labels:
       - 'bug'
       - 'fix'
-  - title: '🛡️ Security'
+  - title: '♻️ Refactor'
     labels:
-      - 'security'
-  - title: '📚 Documentation'
-    labels:
-      - 'documentation'
-      - 'docs'
-  - title: '🧪 Tests'
-    labels:
-      - 'test'
-      - 'testing'
-  - title: '🔧 Maintenance'
+      - 'refactor'
+  - title: '🧰 Maintenance'
     labels:
       - 'chore'
       - 'dependencies'
       - 'deps'
-      - 'refactor'
-  - title: '⚙️ CI'
+  - title: '📝 Other changes'
     labels:
-      - 'ci'
+      - '*'
 
 version-resolver:
   major:
