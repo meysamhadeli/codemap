@@ -7,7 +7,7 @@
 
 codemap follows a small pipeline so each stage can evolve independently:
 
-Users can run `codemap --help` or `codemap -h` at any time to display all commands and options directly in the terminal. `codemap stdout` or `codemap -s` prints packed content without creating a file, while `codemap clipboard` or `codemap -c` copies it through TextCopy. Primary source, selection, and output options also have short aliases documented in the [user guide](../README.md#command-reference).
+Users can run `codemap --help` or `codemap -h` at any time to display all commands and options directly in the terminal. `codemap --stdout` prints packed content without creating a file, while `codemap --clipboard` copies it through TextCopy. The `stdout` and `clipboard` subcommands remain supported. Primary source, selection, and output options also have short aliases documented in the [user guide](../README.md#command-reference).
 
 ```mermaid
 flowchart LR
@@ -26,6 +26,8 @@ flowchart LR
 4. **Render**: renderers produce XML, Markdown, plain text, or JSON.
 5. **Report**: the result includes file count, character count, token counts, Git metadata, and security exclusions.
 
+Skills are an optional context stage. `--skills` / `-s` resolves names from project Skill directories before user-global directories or reads explicit `SKILL.md` paths. Skill content is treated as data, never executed, and is added to the selected output format after packing.
+
 ## Configuration Precedence
 
 ```text
@@ -43,6 +45,7 @@ Configuration is loaded from `codemap.json` or `codemap.config.json` when presen
 - Git diff/log metadata can be added to local or remote repository context.
 - Binary and invalid UTF-8 files are skipped.
 - Remote input clones a repository into a temporary directory; watch mode reports changes so callers can rerun packing.
+- Selected Skills are read as text and included in the output without executing their instructions.
 
 The CLI maps command-line arguments to `PackOptions`; it does not own discovery or rendering. Future capabilities should follow the same boundary. Remote repository acquisition, Git metadata, DevSkim security analysis, external processors, split output, and watch mode can be added as independent services or pipeline stages with focused tests.
 

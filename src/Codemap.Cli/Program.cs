@@ -16,8 +16,11 @@ if (applyPatchPath is not null)
 
 var outputCommand = arguments.FirstOrDefault() switch
 {
-	"stdout" or "-s" => "stdout",
-	"clipboard" or "-c" => "clipboard",
+	"stdout" => "stdout",
+	"clipboard" => "clipboard",
+	_ when HasFlag(arguments, "--stdout") && HasFlag(arguments, "--clipboard") => "invalid",
+	_ when HasFlag(arguments, "--stdout") => "stdout",
+	_ when HasFlag(arguments, "--clipboard") => "clipboard",
 	_ => "file"
 };
 if (outputCommand is not "file")
@@ -44,8 +47,9 @@ if (HasFlag(arguments, "--help", "-h"))
 
 var root = Directory.GetCurrentDirectory();
 var patchMode = HasFlag(arguments, "--patch", "-p");
+var skillSpecifications = GetOptions(arguments, "--skills", "-s");
 var remote = GetOption(arguments, "--remote", "-r");
-var configPath = GetOption(arguments, "--config") ?? FindDefaultConfig(root);
+var configPath = GetOption(arguments, "--config", "-c") ?? FindDefaultConfig(root);
 var include = GetOption(arguments, "--include", "-i");
 var exclude = GetOption(arguments, "--exclude", "-e");
 
@@ -71,6 +75,11 @@ var options = new PackOptions
 
 try
 {
+	if (outputCommand is "invalid")
+	{
+		throw new InvalidOperationException("Use only one of --stdout or --clipboard.");
+	}
+
 	var sourceRoot = remote is null
 		? root
 		: await RepositorySource.ResolveAsync(remote, GetOption(arguments, "--remote-branch", "-b"), CancellationToken.None);
@@ -101,7 +110,9 @@ try
 	};
 
 	var result = await new CodePacker().PackAsync(options);
+	var skills = await SkillContext.LoadAsync(root, skillSpecifications, CancellationToken.None);
 	var content = patchMode ? PatchContext.Wrap(result.Content, options.Format) : result.Content;
+	content = SkillContext.Wrap(content, options.Format, skills);
 	if (outputCommand is not "file" && options.SplitOutputBytes is > 0)
 	{
 		throw new InvalidOperationException("The stdout and clipboard commands cannot be combined with --split-output.");
@@ -175,6 +186,13 @@ static string? GetOption(IReadOnlyList<string> arguments, params string[] names)
 	return null;
 }
 
+static IReadOnlyList<string> GetOptions(IReadOnlyList<string> arguments, params string[] names) =>
+	arguments
+		.Select((argument, index) => (argument, index))
+		.Where(item => names.Contains(item.argument, StringComparer.Ordinal) && item.index + 1 < arguments.Count)
+		.Select(item => arguments[item.index + 1])
+		.ToArray();
+
 static IReadOnlyList<string> SplitPatterns(string value) => value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
 static int? GetIntOption(IReadOnlyList<string> arguments, params string[] names)
@@ -215,8 +233,8 @@ static void PrintHelp()
 	Console.WriteLine();
 	Console.WriteLine("Usage:");
 	Console.WriteLine("  codemap [options]");
-	Console.WriteLine("  codemap stdout, -s [options]   Print packed content to stdout");
-	Console.WriteLine("  codemap clipboard, -c [options] Copy packed content to clipboard");
+	Console.WriteLine("  codemap stdout [options]       Print packed content to stdout");
+	Console.WriteLine("  codemap clipboard [options]    Copy packed content to clipboard");
 	Console.WriteLine();
 	Console.WriteLine("Source:");
 	Console.WriteLine("  -r, --remote <url|owner/repo> Clone a remote Git repository");
@@ -231,11 +249,14 @@ static void PrintHelp()
 	Console.WriteLine("Output:");
 	Console.WriteLine("  -f, --format <xml|markdown|json|plain>");
 	Console.WriteLine("  -o, --output <path>           Output file (default: codemap-output.md)");
+	Console.WriteLine("  --stdout                      Print packed content to stdout");
+	Console.WriteLine("  --clipboard                   Copy packed content to clipboard");
 	Console.WriteLine("  -a, --apply <patch-file>      Preview, approve, and apply a Git diff");
 	Console.WriteLine("  --no-summary                  Omit summary metadata");
 	Console.WriteLine("  --no-tree                     Omit directory structure");
 	Console.WriteLine("  --split-output <bytes>        Split large output into numbered files");
 	Console.WriteLine("  -p, --patch                   Add patch-generation instructions in selected format");
+	Console.WriteLine("  -s, --skills <names|paths>     Load named or explicit Skills; comma-separated");
 	Console.WriteLine();
 	Console.WriteLine("Transformations and limits:");
 	Console.WriteLine("  --security-check              Exclude files with DevSkim findings");

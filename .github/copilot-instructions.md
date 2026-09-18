@@ -18,6 +18,17 @@ Codemap is a pre-scaffold C# tool repository. Do not invent existing projects, c
 
 A typical capability should separate source discovery, filtering, processing, formatting, and output. Add extension points only where callers need customization. Prefer composition through a clear host/composition root.
 
+## Diagram Generation
+
+- For diagrams and flowcharts, use the diagram-design repository as a reference: https://github.com/cathrynlavery/diagram-design
+- Generate diagrams created with diagram-design in SVG format instead of Mermaid.
+- Install the diagram-design plugin globally with:
+
+```bash
+copilot plugin marketplace add cathrynlavery/diagram-design
+copilot plugin install diagram-design@diagram-design
+```
+
 ## Testing
 
 Add focused tests for each new behavior. Cover empty input, ignored paths, invalid configuration, cancellation, deterministic ordering, and platform-sensitive paths where relevant. Keep tests independent of the developer machine and network.
