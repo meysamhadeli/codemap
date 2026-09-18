@@ -38,31 +38,7 @@ Running `codemap` without options scans the current directory. Change into the r
 
 The usual AI-assisted workflow is:
 
-<svg role="img" aria-labelledby="codemap-workflow-title codemap-workflow-desc" viewBox="0 0 960 180" width="100%" xmlns="http://www.w3.org/2000/svg">
-	<title id="codemap-workflow-title">Codemap AI-assisted workflow</title>
-	<desc id="codemap-workflow-desc">Four stages: pack the repository, send context to AI, receive a changes patch, then review and apply it.</desc>
-	<defs>
-		<marker id="codemap-workflow-arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
-			<polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/>
-		</marker>
-	</defs>
-	<rect width="960" height="180" fill="#f5f5f5"/>
-	<path d="M 212 88 H 268" fill="none" stroke="#4f5d75" stroke-width="2" marker-end="url(#codemap-workflow-arrow)"/>
-	<path d="M 452 88 H 508" fill="none" stroke="#4f5d75" stroke-width="2" marker-end="url(#codemap-workflow-arrow)"/>
-	<path d="M 692 88 H 748" fill="none" stroke="#4f5d75" stroke-width="2" marker-end="url(#codemap-workflow-arrow)"/>
-	<rect x="28" y="48" width="184" height="80" rx="8" fill="#fff" stroke="#2d3142"/>
-	<rect x="268" y="48" width="184" height="80" rx="8" fill="#fff" stroke="#2d3142"/>
-	<rect x="508" y="48" width="184" height="80" rx="8" fill="#fff" stroke="#2d3142"/>
-	<rect x="748" y="48" width="184" height="80" rx="8" fill="#fff" stroke="#eb6c36"/>
-	<text x="120" y="82" text-anchor="middle" fill="#2d3142" font-family="Arial, sans-serif" font-size="16" font-weight="600">Pack repository</text>
-	<text x="360" y="82" text-anchor="middle" fill="#2d3142" font-family="Arial, sans-serif" font-size="16" font-weight="600">Send context to AI</text>
-	<text x="600" y="82" text-anchor="middle" fill="#2d3142" font-family="Arial, sans-serif" font-size="16" font-weight="600">Receive changes.patch</text>
-	<text x="840" y="82" text-anchor="middle" fill="#2d3142" font-family="Arial, sans-serif" font-size="16" font-weight="600">Review and apply</text>
-	<text x="120" y="106" text-anchor="middle" fill="#4f5d75" font-family="monospace" font-size="12">codemap --output</text>
-	<text x="360" y="106" text-anchor="middle" fill="#4f5d75" font-family="monospace" font-size="12">context.md</text>
-	<text x="600" y="106" text-anchor="middle" fill="#4f5d75" font-family="monospace" font-size="12">standard Git diff</text>
-	<text x="840" y="106" text-anchor="middle" fill="#eb6c36" font-family="monospace" font-size="12">codemap --apply</text>
-</svg>
+![Codemap AI-assisted workflow](docs/codemap-workflow.png)
 
 Codemap produces context. It does not execute AI output, run Skill instructions, or silently modify repository files.
 
