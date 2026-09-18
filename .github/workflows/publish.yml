@@ -4,6 +4,9 @@ on:
   push:
     tags:
       - 'v*.*.*'
+  release:
+    types:
+      - published
   workflow_dispatch:
     inputs:
       version:
@@ -32,9 +35,13 @@ jobs:
       - name: Determine package version
         shell: bash
         run: |
-          version="${GITHUB_REF_NAME#v}"
           if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
             version="${{ inputs.version }}"
+          elif [[ "$GITHUB_EVENT_NAME" == "release" ]]; then
+            version="${{ github.event.release.tag_name }}"
+            version="${version#v}"
+          else
+            version="${GITHUB_REF_NAME#v}"
           fi
           echo "PACKAGE_VERSION=$version" >> "$GITHUB_ENV"
 
