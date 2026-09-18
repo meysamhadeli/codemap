@@ -8,7 +8,7 @@ public sealed class CliIntegrationTests
     public async Task Cli_Help_ReturnsUsage()
     {
         var result = await RunCliAsync("--help");
-        var clipboardHelp = await RunCliAsync("-c", "--help");
+        var clipboardHelp = await RunCliAsync("clipboard", "--help");
 
         result.ExitCode.ShouldBe(0);
         result.StandardOutput.ShouldContain("codemap [options]");
@@ -52,6 +52,8 @@ public sealed class CliIntegrationTests
         var versionResult = await RunCliAsync("-v");
 
         helpResult.ExitCode.ShouldBe(0);
+        helpResult.StandardOutput.ShouldContain("--stdout");
+        helpResult.StandardOutput.ShouldContain("--clipboard");
         versionResult.ExitCode.ShouldBe(0, versionResult.StandardError);
         Version.TryParse(versionResult.StandardOutput.Trim(), out _).ShouldBeTrue();
 
@@ -96,7 +98,7 @@ public sealed class CliIntegrationTests
         await File.WriteAllTextAsync(Path.Combine(fixture.Path, "sample.cs"), "class Sample {}\n");
         var outputPath = Path.Combine(fixture.Path, "should-not-exist.md");
 
-        var result = await RunCliInDirectoryAsync(fixture.Path, "-s", "-o", outputPath);
+        var result = await RunCliInDirectoryAsync(fixture.Path, "--stdout", "-o", outputPath);
 
         result.ExitCode.ShouldBe(0, result.StandardError);
         result.StandardOutput.ShouldContain("class Sample {}");
@@ -116,6 +118,37 @@ public sealed class CliIntegrationTests
         result.StandardOutput.ShouldStartWith("# Git Patch Generation Instructions");
         result.StandardOutput.ShouldContain("diff --git a/");
         result.StandardOutput.ShouldContain("class Sample {}");
+    }
+
+    [Fact]
+    public async Task Cli_SkillOption_LoadsExplicitSkill()
+    {
+        using var fixture = new TemporaryDirectory();
+        var skillPath = Path.Combine(fixture.Path, "review", "SKILL.md");
+        Directory.CreateDirectory(Path.GetDirectoryName(skillPath)!);
+        await File.WriteAllTextAsync(skillPath, "# Review rules\n\nCheck tests.");
+        await File.WriteAllTextAsync(Path.Combine(fixture.Path, "sample.cs"), "class Sample {}\n");
+
+        var result = await RunCliInDirectoryAsync(fixture.Path, "stdout", "--skills", skillPath);
+
+        result.ExitCode.ShouldBe(0, result.StandardError);
+        result.StandardOutput.ShouldContain("## Loaded Skills");
+        result.StandardOutput.ShouldContain("# Review rules");
+    }
+
+    [Fact]
+    public async Task Cli_SkillsOption_LoadsNamedProjectSkill()
+    {
+        using var fixture = new TemporaryDirectory();
+        var skillPath = Path.Combine(fixture.Path, ".agents", "skills", "review", "SKILL.md");
+        Directory.CreateDirectory(Path.GetDirectoryName(skillPath)!);
+        await File.WriteAllTextAsync(skillPath, "# Project review rules");
+        await File.WriteAllTextAsync(Path.Combine(fixture.Path, "sample.cs"), "class Sample {}\n");
+
+        var result = await RunCliInDirectoryAsync(fixture.Path, "stdout", "-s", "review");
+
+        result.ExitCode.ShouldBe(0, result.StandardError);
+        result.StandardOutput.ShouldContain("# Project review rules");
     }
 
     [Theory]

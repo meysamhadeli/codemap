@@ -1,6 +1,6 @@
 # codemap
 
-> **codemap** scans codebases and turns selected files into focused, deterministic context for AI tools and developers. It filters files, can include Git history, enforces token and size limits, and excludes files with security findings before producing the output.
+> **codemap** packages your repository into clear, AI-ready context. Choose which files to include, add Git history or reusable Skills, control output size, and safely review or apply changes returned as standard Git diffs.
 
 [![.NET 10](https://img.shields.io/badge/.NET-10-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/download/dotnet/10.0) [![License](https://img.shields.io/badge/license-MIT-2ea44f?logo=opensourceinitiative&logoColor=white)](LICENSE)
 
@@ -12,12 +12,12 @@
 - [Command reference](#command-reference)
 - [Configuration](#configuration)
 - [Advanced capabilities](#advanced-capabilities)
-- [Support](#support)
+- [Releases](#releases)
 - [Contribution](#contribution)
 
 ## Installation
 
-codemap is distributed as a .NET tool. Install the published package globally with:
+Install codemap as a global command-line tool. This lets you run `codemap` from any terminal and any project folder:
 
 ```bash
 dotnet tool install --global Codemap.Cli
@@ -31,28 +31,62 @@ Running `codemap` without options scans the current directory. Change into the r
 > **Quick Start**
 >
 > - **Save a snapshot:** `codemap --format markdown --output repository.md`
-> - **Print without a file:** `codemap stdout --format markdown` or `codemap -s`
-> - **Copy to clipboard:** `codemap clipboard --format markdown` or `codemap -c`
-> - **Generate patch context:** `codemap stdout --patch` or `codemap -p`
+> - **Print without a file:** `codemap --stdout --format markdown`
+> - **Copy to clipboard:** `codemap --clipboard --format markdown`
+> - **Generate patch context:** `codemap --stdout --patch` or `codemap -p`
 > - **Preview and apply a patch:** `codemap --apply changes.patch` or `codemap -a changes.patch`
+
+The usual AI-assisted workflow is:
+
+<svg role="img" aria-labelledby="codemap-workflow-title codemap-workflow-desc" viewBox="0 0 960 180" width="100%" xmlns="http://www.w3.org/2000/svg">
+	<title id="codemap-workflow-title">Codemap AI-assisted workflow</title>
+	<desc id="codemap-workflow-desc">Four stages: pack the repository, send context to AI, receive a changes patch, then review and apply it.</desc>
+	<defs>
+		<marker id="codemap-workflow-arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+			<polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/>
+		</marker>
+	</defs>
+	<rect width="960" height="180" fill="#f5f5f5"/>
+	<path d="M 212 88 H 268" fill="none" stroke="#4f5d75" stroke-width="2" marker-end="url(#codemap-workflow-arrow)"/>
+	<path d="M 452 88 H 508" fill="none" stroke="#4f5d75" stroke-width="2" marker-end="url(#codemap-workflow-arrow)"/>
+	<path d="M 692 88 H 748" fill="none" stroke="#4f5d75" stroke-width="2" marker-end="url(#codemap-workflow-arrow)"/>
+	<rect x="28" y="48" width="184" height="80" rx="8" fill="#fff" stroke="#2d3142"/>
+	<rect x="268" y="48" width="184" height="80" rx="8" fill="#fff" stroke="#2d3142"/>
+	<rect x="508" y="48" width="184" height="80" rx="8" fill="#fff" stroke="#2d3142"/>
+	<rect x="748" y="48" width="184" height="80" rx="8" fill="#fff" stroke="#eb6c36"/>
+	<text x="120" y="82" text-anchor="middle" fill="#2d3142" font-family="Arial, sans-serif" font-size="16" font-weight="600">Pack repository</text>
+	<text x="360" y="82" text-anchor="middle" fill="#2d3142" font-family="Arial, sans-serif" font-size="16" font-weight="600">Send context to AI</text>
+	<text x="600" y="82" text-anchor="middle" fill="#2d3142" font-family="Arial, sans-serif" font-size="16" font-weight="600">Receive changes.patch</text>
+	<text x="840" y="82" text-anchor="middle" fill="#2d3142" font-family="Arial, sans-serif" font-size="16" font-weight="600">Review and apply</text>
+	<text x="120" y="106" text-anchor="middle" fill="#4f5d75" font-family="monospace" font-size="12">codemap --output</text>
+	<text x="360" y="106" text-anchor="middle" fill="#4f5d75" font-family="monospace" font-size="12">context.md</text>
+	<text x="600" y="106" text-anchor="middle" fill="#4f5d75" font-family="monospace" font-size="12">standard Git diff</text>
+	<text x="840" y="106" text-anchor="middle" fill="#eb6c36" font-family="monospace" font-size="12">codemap --apply</text>
+</svg>
+
+Codemap produces context. It does not execute AI output, run Skill instructions, or silently modify repository files.
 
 ## Features
 
 | | Capability | What it does |
 | --- | --- | --- |
-| 📦 | AI-ready packaging | Combines selected source files into one readable artifact. |
-| 📤 | Three output modes | Writes to a file, prints to stdout, or copies directly to the clipboard. |
-| 🧭 | Deterministic discovery | Processes files in stable path order for repeatable output. |
-| 🎯 | Include and exclude rules | Filters paths with globs, `.gitignore`, and `.ignore`. |
-| 🌿 | Git awareness | Includes diffs and recent commits when requested. |
-| 🩹 | Patch mode | Adds instructions for generating standard Git diffs with `--patch` or `-p`. |
-| 🔢 | Token counts | Reports GPT-4-compatible `cl100k_base` counts per file and overall. |
-| 🛡️ | Security filtering | Uses DevSkim and excludes files with actionable findings. |
-| 🧹 | Content cleanup | Removes comments or empty lines and can add line numbers. |
-| 📝 | Multiple formats | Writes Markdown, XML, JSON, or plain text; patch mode preserves the selected format. |
-| 📏 | Size controls | Supports file-size limits, token budgets, and split output. |
-| 🌐 | Repository sources | Packs a local directory or clones a remote Git repository. |
-| 👀 | Workflow support | Watches a directory for changes or exposes a reusable C# library. |
+| 📦 | Repository packing | Combines selected text files into one AI-ready artifact. |
+| 🎯 | File selection | Includes and excludes paths with glob patterns. |
+| 🚫 | Ignore rules | Respects `.gitignore`, `.ignore`, and built-in generated-directory exclusions. |
+| 📝 | Output formats | Renders Markdown, XML, JSON, or plain text. |
+| 📤 | Output destinations | Writes to a file, stdout, or the system clipboard. |
+| 🌳 | Repository context | Adds file summaries and directory structure to supported formats. |
+| 🧹 | Content transformations | Removes comments or empty lines and adds line numbers. |
+| 🩹 | Patch workflow | Generates patch instructions and safely previews, validates, and applies Git diffs. |
+| 🧠 | Skill loading | Adds named or explicit project and user Skills as read-only context. |
+| 🌿 | Git context | Includes working-tree diffs and recent commit logs. |
+| 🛡️ | Security scanning | Optionally uses DevSkim to exclude files with actionable findings. |
+| 🔢 | Token accounting | Reports per-file and total `cl100k_base` token counts. |
+| 📏 | Output limits | Enforces file-size and token budgets and can split large output. |
+| 🌐 | Remote repositories | Clones and packs a Git repository or selected branch. |
+| ⚙️ | Configuration | Loads `codemap.json` or `codemap.config.json`, with CLI overrides. |
+| 🧭 | Stable processing order | Processes files in path order for repeatable results. |
+| 👀 | Watch mode | Reports local source changes so output can be refreshed. |
 
 ## How to Run
 
@@ -109,6 +143,29 @@ The command:
 
 Git is required for patch application. Rejecting any file cancels the operation without applying changes.
 
+### 🧠 Skills
+
+Load reusable AI instructions from a project or user Skill directory:
+
+```bash
+codemap stdout --skills review,architecture
+```
+
+Named Skills are searched in this order:
+
+1. `.agents/skills/<name>/SKILL.md`
+2. `.agent/skills/<name>/SKILL.md`
+3. `.claude/skills/<name>/SKILL.md`
+4. The same directories under the current user's home directory.
+
+Load one exact Skill file when a deterministic path is preferred:
+
+```bash
+codemap stdout --skills .agents/skills/review/SKILL.md
+```
+
+Repeat `--skills` to load multiple names or explicit files. Use `-s` as its short alias. Skill files are read as text and never executed. Named Skills use project files before global files; explicit paths do not perform discovery.
+
 ### 📝 Format
 
 The default format is Markdown. Use `--format` to choose another output format when needed:
@@ -152,6 +209,27 @@ codemap \
 
 The same command accepts a complete Git URL. Git must be installed and available on `PATH` for remote repositories and Git metadata.
 
+## 🔄 Workflows
+
+### 🔍 Review a repository
+
+Create a focused Markdown snapshot and send it to an AI tool with a specific request:
+
+```bash
+codemap \
+	--include "src/**/*.cs,tests/**/*.cs,README.md" \
+	--exclude "**/bin/**,**/obj/**" \
+	--format markdown \
+	--output review-context.md
+```
+
+Example request:
+
+```text
+Review this repository for correctness, security risks, and missing tests.
+Do not propose changes outside the selected files. Reference files by path.
+```
+
 ## Command Reference
 
 General form:
@@ -160,8 +238,8 @@ General form:
 codemap [options]
 codemap stdout [options]
 codemap clipboard [options]
-codemap -s [options]
-codemap -c [options]
+codemap --stdout [options]
+codemap --clipboard [options]
 ```
 
 Show the built-in command reference at any time:
@@ -173,19 +251,22 @@ codemap --help
 | Command or option | Alias | Value | Description |
 | --- | --- | --- | --- |
 | `codemap [options]` | - | - | Pack the current directory into the configured output. |
-| `codemap stdout [options]` | `-s` | - | Write packed output to standard output. |
-| `codemap clipboard [options]` | `-c` | - | Copy packed output to the clipboard. |
+| `codemap stdout [options]` | - | - | Write packed output to standard output. |
+| `codemap clipboard [options]` | - | - | Copy packed output to the clipboard. |
 | `--include` | `-i` | comma-separated globs | Include only matching paths. |
 | `--exclude` | `-e` | comma-separated globs | Add exclusion patterns for this run. |
 | `--format` | `-f` | `xml`, `markdown`, `md`, `json`, `plain`, `txt` | Output format. Defaults to Markdown. |
 | `--output` | `-o` | path | Output file path. Defaults to `codemap-output.md`. |
+| `--stdout` | - | flag | Write packed output to standard output. |
+| `--clipboard` | - | flag | Copy packed output to the clipboard. |
 | `--max-file-size` | `-m` | bytes | Skip files larger than this size before reading them. |
 | `--token-budget` | `-t` | count | Fail if the final rendered output exceeds this token count. |
 | `--apply` | `-a` | patch file | Preview, validate, request approval for, and apply a unified Git diff. |
 | `--patch` | `-p` | flag | Add Git patch-generation instructions to the output. |
+| `--skills` | `-s` | comma-separated names or paths | Load named or explicit Skills. Repeat to load multiple values. |
 | `--watch` | `-w` | flag | Watch a directory and report changes. |
 | `--version` | `-v` | flag | Show the tool version. |
-| `--config` | - | path | Configuration JSON file. Without this option, codemap searches for `codemap.json` and `codemap.config.json`. |
+| `--config` | `-c` | path | Configuration JSON file. Without this option, codemap searches for `codemap.json` and `codemap.config.json`. |
 | `--help` | `-h` | flag | Show command usage, options, and examples. |
 | `--remote` | `-r` | URL or `owner/repository` | Clone a remote Git repository into a temporary directory before packing. |
 | `--remote-branch` | `-b` | branch | Branch to clone when using `--remote`. |
@@ -201,6 +282,17 @@ codemap --help
 | `--split-output` | - | bytes | Split output into numbered files when the rendered content exceeds this size. |
 
 Boolean options are enabled by writing the flag.
+
+### Output formats
+
+| Format | Best for | Option |
+| --- | --- | --- |
+| Markdown | Human review and most AI prompts | `--format markdown` |
+| Plain text | Simple pipes and terminals | `--format plain` |
+| JSON | Programmatic processing | `--format json` |
+| XML | Consumers that prefer tagged structure | `--format xml` |
+
+`--patch` preserves the selected output format while adding instructions for generating a standard unified Git diff. `stdout` and `clipboard` are output destinations; they are not formats.
 
 ## Configuration
 
@@ -243,13 +335,20 @@ Token counts help estimate how much context an AI tool will receive. codemap rep
 
 Use `--remote` when the repository is not available locally; codemap clones it into a temporary directory and packs the selected branch. For repository history, `--include-diffs` adds current changes and `--include-logs` adds recent commits. `--watch` monitors a local source tree and reports changes so you can run codemap again.
 
-# 🌟 Support
+## Releases
 
-If you like my work, feel free to:
+Codemap uses GitHub Release Drafter to keep the next release notes updated from merged pull requests. Release notes are grouped by labels and include the matching NuGet installation command.
 
-- ⭐ this repository. And we will be happy together :)
+Use these labels when opening a pull request:
 
-Thanks a bunch for supporting me!
+| Label | Release section | Version impact |
+| --- | --- | --- |
+| `major` | Breaking changes | Major |
+| `minor` or `feature` | Features | Minor |
+| `patch`, `bug`, or `fix` | Bug fixes | Patch |
+| `documentation`, `test`, `security`, `ci`, or `refactor` | Matching section | Patch |
+
+Release Drafter maintains a draft release automatically. Review and publish the draft from GitHub when ready. Publishing creates a `v*.*.*` tag, which starts the existing workflow that builds, tests, packs, and publishes `Codemap.Cli` to NuGet.
 
 ## 🤝 Contribution
 

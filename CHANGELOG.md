@@ -2,7 +2,7 @@
 
 All notable changes to codemap will be documented here.
 
-The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning will be adopted when the first release process is defined.
+The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Releases are drafted from merged pull requests and published from GitHub.
 
 ## Unreleased
 
@@ -16,5 +16,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Ver
 - Added JSON configuration, ignore files, Git metadata, remote input, watch notifications, security scanning, size limits, and split output.
 - Added `--patch` mode for producing Markdown context with Git diff generation instructions.
 - Added explicit patch application workflow with preview and per-file approval.
-- Changed patch application to standard Git diffs with `codemap patch`, Git preflight validation, and per-file approval.
+- Changed patch application to standard Git diffs with `--apply` / `-a`, Git preflight validation, and per-file approval.
+- Added unified `--skills` / `-s` loading for named project or user Skills and explicit Skill files.
 - Added GPT-4-compatible token counting, per-file token metadata, `.ignore` and negation support, binary-file skipping, security-based file exclusion, and richer output summaries.
+- Added GitHub Release Drafter configuration and workflow for categorized release notes, semantic version labels, and NuGet installation instructions.

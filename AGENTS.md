@@ -40,6 +40,17 @@ New behavior should include focused tests under `tests/Codemap.Tests/`. Prefer d
 - Use nullable reference types and analyzers when the first project is created.
 - Do not introduce abstractions without a current caller or clear extension point.
 
+## Diagram Generation
+
+- For diagrams and flowcharts, use the diagram-design repository as a reference: https://github.com/cathrynlavery/diagram-design
+- Generate diagrams created with diagram-design in SVG format instead of Mermaid.
+- Install the diagram-design plugin globally with:
+
+```bash
+copilot plugin marketplace add cathrynlavery/diagram-design
+copilot plugin install diagram-design@diagram-design
+```
+
 ## Adding a New Feature
 
 1. Identify the owning capability under `src/`.
@@ -51,7 +62,7 @@ New behavior should include focused tests under `tests/Codemap.Tests/`. Prefer d
 
 ## CI/CD
 
-GitHub Actions workflows build and test `Codemap.slnx` on pull requests and pushes.
+GitHub Actions workflows build and test `Codemap.slnx` on pull requests and pushes. Release Drafter maintains categorized draft releases; publishing a `v*.*.*` release tag triggers the NuGet package workflow.
 
 ## Documentation Status
 
