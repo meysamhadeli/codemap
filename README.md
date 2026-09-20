@@ -12,7 +12,6 @@
 - [Command reference](#command-reference)
 - [Configuration](#configuration)
 - [Advanced capabilities](#advanced-capabilities)
-- [Releases](#releases)
 - [Contribution](#contribution)
 
 ## Installation
@@ -415,21 +414,6 @@ Token counts help estimate how much context an AI tool will receive. codemap rep
 ### 🔄 Workflow
 
 Use `--remote` when the repository is not available locally; codemap clones it into a temporary directory and packs the selected branch. For repository history, `--include-diffs` adds current changes and `--include-logs` adds recent commits. `--watch` monitors a local source tree and reports changes so you can run codemap again.
-
-## Releases
-
-Codemap uses GitHub Release Drafter to keep the next release notes updated from merged pull requests. Release notes are grouped by labels and include the matching NuGet installation command.
-
-Use these labels when opening a pull request:
-
-| Label | Release section | Version impact |
-| --- | --- | --- |
-| `major` | Breaking changes | Major |
-| `minor` or `feature` | Features | Minor |
-| `patch`, `bug`, or `fix` | Bug fixes | Patch |
-| `documentation`, `test`, `security`, `ci`, or `refactor` | Matching section | Patch |
-
-Release Drafter maintains a draft release automatically. Review and publish the draft from GitHub when ready. Publishing creates a `v*.*.*` tag, which starts the existing workflow that builds, tests, packs, and publishes `Codemap.Cli` to NuGet.
 
 ## 🤝 Contribution
 

@@ -13,24 +13,63 @@ template: |
 
 categories:
   - title: '🚀 Features'
-    labels:
-      - 'feature'
-      - 'enhancement'
+    exclusive: true
+    semver-increment: minor
+    when:
+      - conventional:
+          type: 'feat'
+      - labels:
+          - 'feature'
+          - 'enhancement'
   - title: '🐛 Bug Fixes'
-    labels:
-      - 'bug'
-      - 'fix'
+    exclusive: true
+    when:
+      - conventional:
+          types:
+            - 'fix'
+            - 'perf'
+      - labels:
+          - 'bug'
+          - 'fix'
   - title: '♻️ Refactor'
-    labels:
-      - 'refactor'
+    exclusive: true
+    when:
+      - conventional:
+          type: 'refactor'
+      - labels:
+          - 'refactor'
   - title: '🧰 Maintenance'
-    labels:
-      - 'chore'
-      - 'dependencies'
-      - 'deps'
+    exclusive: true
+    when:
+      - conventional:
+          types:
+            - 'chore'
+            - 'build'
+            - 'ci'
+      - labels:
+          - 'chore'
+          - 'dependencies'
+          - 'deps'
+  - title: '🧪 Test'
+    exclusive: true
+    when:
+      - conventional:
+          type: 'test'
+      - labels:
+          - 'test'
   - title: '📝 Other changes'
-    labels:
-      - '*'
+    exclusive: true
+    when:
+      - conventional:
+          types:
+            - 'docs'
+            - 'style'
+            - 'revert'
+      - labels:
+          - 'documentation'
+          - 'docs'
+  - title: '📝 Other changes'
+    exclusive: true
 
 version-resolver:
   major:
