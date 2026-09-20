@@ -1,6 +1,6 @@
 # codemap
 
-> **codemap** packs your repository into clear, AI-ready context. Choose which files to include, add Git history or reusable Skills, control output size, and safely review or apply changes returned as standard Git diffs.
+> **codemap** turns your repository into clear, AI-ready context. Choose which files to include, add Git history or reusable Skills, control output size, and safely review or apply changes returned as standard Git diffs.
 
 [![.NET 10](https://img.shields.io/badge/.NET-10-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/download/dotnet/10.0) [![License](https://img.shields.io/badge/license-MIT-2ea44f?logo=opensourceinitiative&logoColor=white)](LICENSE)
 
@@ -50,18 +50,16 @@ Codemap produces context. It does not execute AI output, run Skill instructions,
 | 🚫 | Ignore rules | Respects `.gitignore`, `.ignore`, and built-in generated-directory exclusions. |
 | 📝 | Output formats | Renders Markdown, XML, JSON, or plain text. |
 | 📤 | Output destinations | Writes to a file, stdout, or the system clipboard. |
-| 🌳 | Repository context | Adds file summaries and directory structure to supported formats. |
-| 🧹 | Content transformations | Removes comments or empty lines and adds line numbers. |
 | 🩹 | Patch workflow | Generates patch instructions and safely previews, validates, and applies Git diffs. |
 | 🧠 | Skill loading | Adds named or explicit project and user Skills as read-only context. |
-| 🌿 | Git context | Includes working-tree diffs and recent commit logs. |
 | 🛡️ | Security scanning | Optionally uses DevSkim to exclude files with actionable findings. |
 | 🔢 | Token accounting | Reports per-file and total `cl100k_base` token counts. |
 | 📏 | Output limits | Enforces file-size and token budgets and can split large output. |
 | 🌐 | Remote repositories | Clones and packs a Git repository or selected branch. |
 | ⚙️ | Configuration | Loads `codemap.json`, with CLI overrides. |
-| 🧭 | Stable processing order | Processes files in path order for repeatable results. |
 | 👀 | Watch mode | Reports local source changes so output can be refreshed. |
+| 🌳 | Repository context | Adds file summaries and directory structure to supported formats. |
+| 🧹 | Content transformations | Removes comments or empty lines and adds line numbers. |
 
 ## How to Run
 
