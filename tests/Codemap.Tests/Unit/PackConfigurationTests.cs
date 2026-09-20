@@ -9,12 +9,14 @@ public sealed class PackConfigurationTests
     {
         using var fixture = new TemporaryDirectory();
         var path = Path.Combine(fixture.Path, "codemap.json");
-        await File.WriteAllTextAsync(path, "{\"format\":\"markdown\",\"removeComments\":true,\"tokenBudget\":100}");
+        await File.WriteAllTextAsync(path, "{\"format\":\"markdown\",\"outputMode\":\"stdout\",\"copyToClipboard\":true,\"removeComments\":true,\"tokenBudget\":100}");
 
         var configuration = await PackConfiguration.LoadAsync(path);
         var options = configuration.ApplyTo(new PackOptions { RootDirectory = fixture.Path, ShowLineNumbers = true });
 
         options.Format.ShouldBe(OutputFormat.Markdown);
+        options.OutputMode.ShouldBe(OutputMode.Stdout);
+        options.CopyToClipboard.ShouldBeTrue();
         options.RemoveComments.ShouldBeTrue();
         options.ShowLineNumbers.ShouldBeTrue();
         options.TokenBudget.ShouldBe(100);

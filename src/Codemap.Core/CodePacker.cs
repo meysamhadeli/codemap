@@ -81,8 +81,9 @@ public sealed class CodePacker
         foreach (var pattern in options.ExcludePatterns
             .Concat(ExcludeFileLoader.Load(options.RootDirectory, ".gitignore", ".ignore")))
         {
-            var negated = pattern.StartsWith('!');
-            var value = negated ? pattern[1..] : pattern;
+            var trimmedPattern = pattern.Trim();
+            var negated = trimmedPattern.StartsWith('!');
+            var value = negated ? trimmedPattern[1..].Trim() : trimmedPattern;
             if (Matches(relativePath, value, options.RootDirectory)) excluded = !negated;
         }
         if (excluded) return false;
@@ -92,7 +93,8 @@ public sealed class CodePacker
 
     private static bool Matches(string path, string pattern, string rootDirectory)
     {
-        var normalized = Normalize(pattern).TrimStart('/').TrimEnd('/');
+        var trimmedPattern = pattern.Trim();
+        var normalized = Normalize(trimmedPattern).TrimStart('/').TrimEnd('/');
         if (normalized.Length == 0)
         {
             return false;
@@ -106,14 +108,41 @@ public sealed class CodePacker
                 || path.StartsWith(normalized + "/", StringComparison.OrdinalIgnoreCase);
         }
 
-        var expression = Regex.Escape(normalized).Replace("\\*\\*/", "(?:.*/)?").Replace("\\*\\*", ".*").Replace("\\*", "[^/]*");
-        expression = expression.Replace("\\?", "[^/]");
-        if (!normalized.Contains('/'))
+        if (MatchesPath(path, normalized, trimmedPattern.EndsWith('/')))
+        {
+            return true;
+        }
+
+        if (normalized.EndsWith("/**", StringComparison.Ordinal) || !path.Contains('/'))
+        {
+            return false;
+        }
+
+        var segments = path.Split('/');
+        for (var index = 1; index < segments.Length; index++)
+        {
+            if (MatchesPath(string.Join('/', segments[..index]), normalized, false))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool MatchesPath(string path, string normalizedPattern, bool directoryPattern)
+    {
+        var expression = Regex.Escape(normalizedPattern)
+            .Replace("\\*\\*/", "(?:.*/)?")
+            .Replace("\\*\\*", ".*")
+            .Replace("\\*", "[^/]*")
+            .Replace("\\?", "[^/]");
+        if (!normalizedPattern.Contains('/'))
         {
             expression = "(?:.*/)?" + expression;
         }
 
-        expression = "^" + expression + (pattern.EndsWith('/') ? "(?:/.*)?" : string.Empty) + "$";
+        expression = "^" + expression + (directoryPattern ? "(?:/.*)?" : string.Empty) + "$";
         return Regex.IsMatch(path, expression, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
     }
 

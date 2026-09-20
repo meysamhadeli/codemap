@@ -21,7 +21,7 @@ flowchart LR
 ```
 
 1. **Discover**: `CodePacker` finds files beneath the configured root in deterministic path order.
-2. **Filter**: include patterns, default exclusions, custom exclude patterns, `.gitignore`, and `.ignore` determine which paths remain. Include and exclude values can be literal files, literal folders, or comma-separated glob patterns using `*`, `**`, and `?`.
+2. **Filter**: include patterns, default exclusions, custom exclude patterns, `.gitignore`, and `.ignore` determine which paths remain. Include and exclude values can be literal files, literal or wildcard folders, or comma-separated glob patterns using `*`, `**`, and `?`; whitespace around comma-separated values is ignored.
 3. **Transform**: optional line numbers, comment removal, and empty-line removal modify content.
 4. **Render**: renderers produce XML, Markdown, plain text, or JSON.
 5. **Report**: the result includes file count, character count, token counts, Git metadata, and security exclusions.
@@ -31,12 +31,12 @@ Skills are an optional context stage. `--skills` / `-s` resolves names from proj
 ## Configuration Precedence
 
 ```text
-Built-in defaults < codemap.json / codemap.config.json < explicit CLI options
+Built-in defaults < codemap.json < explicit CLI options
 ```
 
 Command-line values override file configuration. Include and exclude lists supplied on the command line replace their configured lists.
 
-Configuration is loaded from `codemap.json` or `codemap.config.json` when present. Explicit CLI options override file configuration. Exclude patterns are read from `.gitignore` and `.ignore`, in addition to options and built-in generated-directory exclusions. Each file uses one pattern per line; blank lines and `#` comments are skipped. Patterns are evaluated in order and support `!` negation. `.gitignore` is loaded first, `.ignore` second, and `--exclude` patterns after both files. Include patterns are applied last.
+Configuration is loaded from repository `codemap.json` first, then from the user-level application-data config when no repository config exists. The user-level file is `%APPDATA%/codemap/codemap.json` on Windows, `~/.config/codemap/codemap.json` on Linux, and `~/Library/Application Support/codemap/codemap.json` on macOS. Use `--config <path>` for another file or `--config-template <path>` to generate a starter file. `codemap config save --global` writes the user-level default, independently of the global tool installation directory. `outputMode` selects the default destination: `file`, `stdout`, or `clipboard`; it defaults to `file`. Explicit destination commands and flags override it for one run. `codemap config save` merges only explicitly supplied CLI options into the selected configuration, preserving other settings for later commands. Boolean values supplied to `config save` use explicit `true` or `false` values, including JSON-style names such as `--includeGitDiffs false`. Explicit packing CLI options override file configuration. `copyToClipboard` can copy normal file or stdout output without changing its destination; `--no-copy-to-clipboard` disables it for one run. Exclude patterns are read from `.gitignore` and `.ignore`, in addition to options and built-in generated-directory exclusions. Each file uses one pattern per line; blank lines and `#` comments are skipped. Patterns are evaluated in order and support `!` negation. `.gitignore` is loaded first, `.ignore` second, and `--exclude` patterns after both files. Include patterns are applied last.
 
 ## Optional Stages
 

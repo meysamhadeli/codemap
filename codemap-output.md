@@ -1036,12 +1036,12 @@ flowchart LR
 ## Configuration Precedence
 
 ```text
-Built-in defaults < codemap.json / codemap.config.json < explicit CLI options
+Built-in defaults < codemap.json < explicit CLI options
 ```
 
 Command-line values override file configuration. Include and exclude lists supplied on the command line replace their configured lists.
 
-Configuration is loaded from `codemap.json` or `codemap.config.json` when present. Explicit CLI options override file configuration. Exclude patterns are read from `.gitignore` and `.ignore`, in addition to options and built-in generated-directory exclusions. Each file uses one pattern per line; blank lines and `#` comments are skipped. Patterns are evaluated in order and support `!` negation. `.gitignore` is loaded first, `.ignore` second, and `--exclude` patterns after both files. Include patterns are applied last.
+Configuration is loaded from `codemap.json` when present. Explicit CLI options override file configuration. Exclude patterns are read from `.gitignore` and `.ignore`, in addition to options and built-in generated-directory exclusions. Each file uses one pattern per line; blank lines and `#` comments are skipped. Patterns are evaluated in order and support `!` negation. `.gitignore` is loaded first, `.ignore` second, and `--exclude` patterns after both files. Include patterns are applied last.
 
 ## Optional Stages
 
@@ -1260,7 +1260,7 @@ codemap --help
 | --- | --- | --- | --- |
 | `--remote` | `-r` | URL or `owner/repository` | Clone a remote Git repository into a temporary directory before packing. |
 | `--remote-branch` | `-b` | branch | Branch to clone when using `--remote`. |
-| `--config` | - | path | Configuration JSON file. Without this option, codemap searches for `codemap.json` and `codemap.config.json`. |
+| `--config` | - | path | Configuration JSON file. Without this option, codemap searches for `codemap.json`. |
 | `--include` | `-i` | comma-separated globs | Include only matching paths, for example `**/*.cs,**/*.md`. |
 | `--exclude` | `-e` | comma-separated globs | Add exclusion patterns for this run. |
 | `--format` | `-f` | `xml`, `markdown`, `md`, `json`, `plain`, `txt` | Output format. Defaults to Markdown. |
@@ -1287,14 +1287,12 @@ Review and apply a generated patch with `codemap apply patch.sh`. The command pr
 
 ## Configuration
 
-Configuration uses JSON. codemap automatically loads `codemap.json` or `codemap.config.json` from the source root. Use `--config` to select another file.
+Configuration uses JSON. codemap automatically loads `codemap.json` from the source root. Use `--config` to select another file.
 
 ```json
 {
 	"outputPath": "artifacts/repository.md",
 	"format": "Markdown",
-	"includePatterns": ["**/*.cs", "**/*.md"],
-	"excludePatterns": ["**/test-data/**"],
 	"includeFileSummary": true,
 	"includeDirectoryStructure": true,
 	"showLineNumbers": false,
@@ -1716,11 +1714,12 @@ static long? GetLongOption(IReadOnlyList<string> arguments, params string[] name
 
 static string? FindDefaultConfig(string root)
 {
-	foreach (var name in new[] { "codemap.json", "codemap.config.json" })
-	{
-		var path = Path.Combine(root, name);
-		if (File.Exists(path)) return path;
-	}
+    var repositoryConfigPath = Path.Combine(root, "codemap.json");
+    if (File.Exists(repositoryConfigPath)) return repositoryConfigPath;
+
+    var userDirectory = Path.GetDirectoryName(GetUserConfigPath())!;
+    var userConfigPath = Path.Combine(userDirectory, "codemap.json");
+    if (File.Exists(userConfigPath)) return userConfigPath;
 
 	return null;
 }

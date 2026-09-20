@@ -1,9 +1,42 @@
 ﻿using Codemap.Core;
 using Codemap.Cli;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using TextCopy;
 
+const string PackConfigurationTemplate = """
+{
+	"outputPath": "codemap-output.md",
+	"format": "markdown",
+	"outputMode": "file",
+	"copyToClipboard": false,
+	"includeFileSummary": true,
+	"includeDirectoryStructure": true,
+	"showLineNumbers": false,
+	"removeComments": false,
+	"removeEmptyLines": false,
+	"tokenBudget": null,
+	"maxFileSizeBytes": null,
+	"enableSecurityCheck": false,
+	"includeGitDiffs": false,
+	"includeGitLogs": false,
+	"gitLogCount": 20,
+	"splitOutputBytes": null
+}
+""";
+
 var arguments = args.ToList();
+if (arguments.Count >= 2
+	&& arguments[0].Equals("config", StringComparison.OrdinalIgnoreCase)
+	&& arguments[1].Equals("save", StringComparison.OrdinalIgnoreCase))
+{
+	var configOutputPath = GetOption(arguments, "--path")
+		?? (HasFlag(arguments, "--global") ? GetUserConfigPath() : "codemap.json");
+	await SaveConfigurationAsync(configOutputPath, arguments);
+	Console.WriteLine($"Saved configuration to {configOutputPath}.");
+	return 0;
+}
+
 var applyPatchPath = GetOption(arguments, "--apply", "-a");
 if (applyPatchPath is not null)
 {
@@ -47,16 +80,27 @@ if (HasFlag(arguments, "--help", "-h"))
 
 var root = Directory.GetCurrentDirectory();
 var patchMode = HasFlag(arguments, "--patch", "-p");
+var outputModeOption = GetOption(arguments, "--output-mode");
+var outputMode = ParseOutputMode(outputModeOption);
 var skillSpecifications = GetOptions(arguments, "--skills", "-s");
 var remote = GetOption(arguments, "--remote", "-r");
 var configPath = GetOption(arguments, "--config", "-c") ?? FindDefaultConfig(root);
 var include = GetOption(arguments, "--include", "-i");
 var exclude = GetOption(arguments, "--exclude", "-e");
+var configTemplatePath = GetOption(arguments, "--config-template");
+
+if (configTemplatePath is not null)
+{
+	await File.WriteAllTextAsync(configTemplatePath, PackConfigurationTemplate);
+	Console.WriteLine($"Created configuration template at {configTemplatePath}.");
+	return 0;
+}
 
 var options = new PackOptions
 {
 	RootDirectory = root,
 	OutputPath = patchMode ? "codemap-patch-context.md" : "codemap-output.md",
+	OutputMode = outputMode,
 	IncludePatterns = ["**/*"],
 	IncludeFileSummary = true,
 	IncludeDirectoryStructure = true,
@@ -94,20 +138,31 @@ try
 	{
 		OutputPath = GetOption(arguments, "--output", "-o") ?? options.OutputPath,
 		Format = GetOption(arguments, "--format", "-f") is { } format ? ParseFormat(format) : options.Format,
+		OutputMode = outputModeOption is null ? options.OutputMode : outputMode,
+		CopyToClipboard = ResolveBool(arguments, options.CopyToClipboard, "--copy-to-clipboard", "--no-copy-to-clipboard"),
 		IncludePatterns = include is null ? options.IncludePatterns : SplitPatterns(include),
 		ExcludePatterns = exclude is null ? options.ExcludePatterns : SplitPatterns(exclude),
-		IncludeFileSummary = arguments.Contains("--no-summary") ? false : options.IncludeFileSummary,
-		IncludeDirectoryStructure = arguments.Contains("--no-tree") ? false : options.IncludeDirectoryStructure,
-		ShowLineNumbers = arguments.Contains("--line-numbers") || options.ShowLineNumbers,
-		RemoveComments = arguments.Contains("--remove-comments") || options.RemoveComments,
-		RemoveEmptyLines = arguments.Contains("--remove-empty-lines") || options.RemoveEmptyLines,
+		IncludeFileSummary = ResolveBool(arguments, options.IncludeFileSummary, "--summary", "--no-summary"),
+		IncludeDirectoryStructure = ResolveBool(arguments, options.IncludeDirectoryStructure, "--tree", "--no-tree"),
+		ShowLineNumbers = ResolveBool(arguments, options.ShowLineNumbers, "--line-numbers", "--no-line-numbers"),
+		RemoveComments = ResolveBool(arguments, options.RemoveComments, "--remove-comments", "--no-remove-comments"),
+		RemoveEmptyLines = ResolveBool(arguments, options.RemoveEmptyLines, "--remove-empty-lines", "--no-remove-empty-lines"),
 		TokenBudget = GetIntOption(arguments, "--token-budget", "-t") ?? options.TokenBudget
 		,MaxFileSizeBytes = GetLongOption(arguments, "--max-file-size", "-m") ?? options.MaxFileSizeBytes
-		,EnableSecurityCheck = arguments.Contains("--security-check") || options.EnableSecurityCheck
-		,IncludeGitDiffs = arguments.Contains("--include-diffs") || options.IncludeGitDiffs
-		,IncludeGitLogs = arguments.Contains("--include-logs") || options.IncludeGitLogs
+		,EnableSecurityCheck = ResolveBool(arguments, options.EnableSecurityCheck, "--security-check", "--no-security-check")
+		,IncludeGitDiffs = ResolveBool(arguments, options.IncludeGitDiffs, "--include-diffs", "--no-include-diffs")
+		,IncludeGitLogs = ResolveBool(arguments, options.IncludeGitLogs, "--include-logs", "--no-include-logs")
 		,SplitOutputBytes = GetIntOption(arguments, "--split-output") ?? options.SplitOutputBytes
 	};
+	if (outputCommand is "file")
+	{
+		outputCommand = options.OutputMode switch
+		{
+			OutputMode.Stdout => "stdout",
+			OutputMode.Clipboard => "clipboard",
+			_ => "file"
+		};
+	}
 
 	var result = await new CodePacker().PackAsync(options);
 	var skills = await SkillContext.LoadAsync(root, skillSpecifications, CancellationToken.None);
@@ -139,6 +194,11 @@ try
 	{
 		await File.WriteAllTextAsync(options.OutputPath, content);
 	}
+	if (options.CopyToClipboard && outputCommand is not "clipboard")
+	{
+		await CopyToClipboardAsync(content);
+		Console.Error.WriteLine($"Copied {result.Files.Count} files to the clipboard ({result.TokenCount} tokens).");
+	}
 	if (outputCommand is "file")
 	{
 		Console.WriteLine($"Packed {result.Files.Count} files into {options.OutputPath} ({result.TokenCount} tokens).");
@@ -167,6 +227,83 @@ catch (Exception exception) when (exception is IOException or UnauthorizedAccess
 
 static bool HasFlag(IReadOnlyList<string> arguments, params string[] names) =>
 	names.Any(name => arguments.Contains(name, StringComparer.Ordinal));
+
+static bool ResolveBool(IReadOnlyList<string> arguments, bool configuredValue, string enableName, string disableName) =>
+	HasFlag(arguments, disableName) ? false : HasFlag(arguments, enableName) || configuredValue;
+
+static async Task SaveConfigurationAsync(string path, IReadOnlyList<string> arguments)
+{
+	var fullPath = Path.GetFullPath(path);
+	var directory = Path.GetDirectoryName(fullPath);
+	if (directory is not null)
+	{
+		Directory.CreateDirectory(directory);
+	}
+
+	var sourcePath = GetOption(arguments, "--config", "-c")
+		?? (HasFlag(arguments, "--global") ? GetUserConfigPath() : FindDefaultConfig(Directory.GetCurrentDirectory()));
+	var configuration = sourcePath is not null && File.Exists(sourcePath)
+		? JsonNode.Parse(await File.ReadAllTextAsync(sourcePath)) as JsonObject ?? new JsonObject()
+		: new JsonObject();
+
+	SetString(configuration, "outputPath", GetOption(arguments, "--output", "-o"));
+	SetString(configuration, "format", GetOption(arguments, "--format", "-f") is { } format ? ParseFormat(format).ToString() : null);
+	SetString(configuration, "outputMode", GetOption(arguments, "--output-mode"));
+	SetConfigBool(configuration, "copyToClipboard", arguments, "--copy-to-clipboard", "--copyToClipboard");
+	SetPatterns(configuration, "includePatterns", GetOption(arguments, "--include", "-i"));
+	SetPatterns(configuration, "excludePatterns", GetOption(arguments, "--exclude", "-e"));
+	SetConfigBool(configuration, "includeFileSummary", arguments, "--summary", "--includeFileSummary");
+	SetConfigBool(configuration, "includeDirectoryStructure", arguments, "--tree", "--includeDirectoryStructure");
+	SetConfigBool(configuration, "showLineNumbers", arguments, "--line-numbers", "--showLineNumbers");
+	SetConfigBool(configuration, "removeComments", arguments, "--remove-comments", "--removeComments");
+	SetConfigBool(configuration, "removeEmptyLines", arguments, "--remove-empty-lines", "--removeEmptyLines");
+	SetConfigBool(configuration, "enableSecurityCheck", arguments, "--security-check", "--enableSecurityCheck");
+	SetConfigBool(configuration, "includeGitDiffs", arguments, "--include-diffs", "--includeGitDiffs");
+	SetConfigBool(configuration, "includeGitLogs", arguments, "--include-logs", "--includeGitLogs");
+	SetNumber(configuration, "tokenBudget", GetOption(arguments, "--token-budget", "-t"));
+	SetNumber(configuration, "maxFileSizeBytes", GetOption(arguments, "--max-file-size", "-m"));
+	SetNumber(configuration, "gitLogCount", GetOption(arguments, "--include-logs-count"));
+	SetNumber(configuration, "splitOutputBytes", GetOption(arguments, "--split-output"));
+
+	await File.WriteAllTextAsync(fullPath, configuration.ToJsonString(new JsonSerializerOptions
+	{
+		WriteIndented = true
+	}));
+}
+
+static void SetString(JsonObject configuration, string name, string? value)
+{
+	if (value is not null) configuration[name] = value;
+}
+
+static void SetPatterns(JsonObject configuration, string name, string? value)
+{
+	if (value is not null) configuration[name] = JsonSerializer.SerializeToNode(SplitPatterns(value));
+}
+
+static void SetConfigBool(JsonObject configuration, string name, IReadOnlyList<string> arguments, params string[] names)
+{
+	for (var index = 0; index < arguments.Count; index++)
+	{
+		if (!names.Contains(arguments[index], StringComparer.Ordinal) || index + 1 >= arguments.Count)
+		{
+			continue;
+		}
+
+		if (bool.TryParse(arguments[index + 1], out var value))
+		{
+			configuration[name] = value;
+		}
+	}
+}
+
+static void SetNumber(JsonObject configuration, string name, string? value)
+{
+	if (value is not null && long.TryParse(value, System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var number))
+	{
+		configuration[name] = number;
+	}
+}
 
 static async Task CopyToClipboardAsync(string content)
 {
@@ -209,13 +346,28 @@ static long? GetLongOption(IReadOnlyList<string> arguments, params string[] name
 
 static string? FindDefaultConfig(string root)
 {
-	foreach (var name in new[] { "codemap.json", "codemap.config.json" })
-	{
-		var path = Path.Combine(root, name);
-		if (File.Exists(path)) return path;
-	}
+	var repositoryConfigPath = Path.Combine(root, "codemap.json");
+	if (File.Exists(repositoryConfigPath)) return repositoryConfigPath;
+
+	var userDirectory = Path.GetDirectoryName(GetUserConfigPath())!;
+	var userConfigPath = Path.Combine(userDirectory, "codemap.json");
+	if (File.Exists(userConfigPath)) return userConfigPath;
 
 	return null;
+}
+
+static string GetUserConfigPath()
+{
+	var configDirectory = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+
+	if (string.IsNullOrWhiteSpace(configDirectory))
+	{
+		configDirectory = Path.Combine(
+			Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+			".config");
+	}
+
+	return Path.Combine(configDirectory, "codemap", "codemap.json");
 }
 
 static OutputFormat ParseFormat(string? value) => value?.ToLowerInvariant() switch
@@ -227,6 +379,13 @@ static OutputFormat ParseFormat(string? value) => value?.ToLowerInvariant() swit
 	_ => OutputFormat.Markdown
 };
 
+static OutputMode ParseOutputMode(string? value) => value?.ToLowerInvariant() switch
+{
+	"stdout" => OutputMode.Stdout,
+	"clipboard" => OutputMode.Clipboard,
+	_ => OutputMode.File
+};
+
 static void PrintHelp()
 {
 	Console.WriteLine("codemap - package repositories into AI-friendly output");
@@ -235,6 +394,7 @@ static void PrintHelp()
 	Console.WriteLine("  codemap [options]");
 	Console.WriteLine("  codemap stdout [options]       Print packed content to stdout");
 	Console.WriteLine("  codemap clipboard [options]    Copy packed content to clipboard");
+	Console.WriteLine("  codemap config save [options]  Save options for future commands");
 	Console.WriteLine();
 	Console.WriteLine("Source:");
 	Console.WriteLine("  -r, --remote <url|owner/repo> Clone a remote Git repository");
@@ -251,23 +411,37 @@ static void PrintHelp()
 	Console.WriteLine("  -o, --output <path>           Output file (default: codemap-output.md)");
 	Console.WriteLine("  --stdout                      Print packed content to stdout");
 	Console.WriteLine("  --clipboard                   Copy packed content to clipboard");
+	Console.WriteLine("  --output-mode <file|stdout|clipboard>  Default output destination");
+	Console.WriteLine("  --copy-to-clipboard           Also copy file or stdout output to clipboard");
+	Console.WriteLine("  --no-copy-to-clipboard        Override config and disable automatic copying");
 	Console.WriteLine("  -a, --apply <patch-file>      Preview, approve, and apply a Git diff");
 	Console.WriteLine("  --no-summary                  Omit summary metadata");
+	Console.WriteLine("  --summary                     Include summary metadata");
 	Console.WriteLine("  --no-tree                     Omit directory structure");
+	Console.WriteLine("  --tree                        Include directory structure");
 	Console.WriteLine("  --split-output <bytes>        Split large output into numbered files");
 	Console.WriteLine("  -p, --patch                   Add patch-generation instructions in selected format");
 	Console.WriteLine("  -s, --skills <names|paths>     Load named or explicit Skills; comma-separated");
+	Console.WriteLine("  --config-template <path>      Create a ready-to-edit configuration file");
+	Console.WriteLine("  --path <path>                 Config output path for 'config save'");
+	Console.WriteLine("  --global                      Use the user-level config path for 'config save'");
 	Console.WriteLine();
 	Console.WriteLine("Transformations and limits:");
 	Console.WriteLine("  --security-check              Exclude files with DevSkim findings");
+	Console.WriteLine("  --no-security-check           Disable security scanning");
 	Console.WriteLine("  --remove-comments             Remove common source comments");
+	Console.WriteLine("  --no-remove-comments          Preserve source comments");
 	Console.WriteLine("  --remove-empty-lines          Remove blank lines");
+	Console.WriteLine("  --no-remove-empty-lines       Preserve blank lines");
 	Console.WriteLine("  --line-numbers                Add line numbers");
+	Console.WriteLine("  --no-line-numbers             Disable line numbers");
 	Console.WriteLine("  -t, --token-budget <count>    Fail when rendered output exceeds count");
 	Console.WriteLine();
 	Console.WriteLine("Git and workflow:");
 	Console.WriteLine("  --include-diffs               Include git diff");
+	Console.WriteLine("  --no-include-diffs            Disable git diff");
 	Console.WriteLine("  --include-logs                Include recent git commits");
+	Console.WriteLine("  --no-include-logs             Disable recent git commits");
 	Console.WriteLine("  --include-logs-count <count>  Number of commits (default: 20)");
 	Console.WriteLine("  -w, --watch                   Report source changes");
 	Console.WriteLine("  -v, --version                 Show the tool version");

@@ -60,6 +60,11 @@ copilot plugin install diagram-design@diagram-design
 5. Update `README.md`, `docs/`, and `CHANGELOG.md` when the feature changes user-visible behavior.
 6. Update `.github/copilot-instructions.md` if the dependency or registration path changes.
 
+## Commits
+
+- Follow the [Conventional Commits](https://www.conventionalcommits.org/) specification for every commit.
+- When a commit message is requested, make it short and specific to the actual changes. Use `type: description` without a scope, such as `feat: add configurable output mode` or `fix: match folders at any depth`.
+
 ## CI/CD
 
 GitHub Actions workflows build and test `Codemap.slnx` on pull requests and pushes. Release Drafter maintains categorized draft releases; publishing a `v*.*.*` release tag triggers the NuGet package workflow.

@@ -74,6 +74,53 @@ public sealed class CodePackerTests
     }
 
     [Fact]
+    public async Task PackAsync_WildcardFolderPatternsMatchDescendantsAndTrimCommaSpaces()
+    {
+        using var fixture = new TemporaryDirectory();
+        Directory.CreateDirectory(Path.Combine(fixture.Path, "src", "Api"));
+        Directory.CreateDirectory(Path.Combine(fixture.Path, "src", "tests"));
+        Directory.CreateDirectory(Path.Combine(fixture.Path, "src", "foo"));
+        await File.WriteAllTextAsync(Path.Combine(fixture.Path, "src", "Api", "test.cs"), "class ApiTest {}\n");
+        await File.WriteAllTextAsync(Path.Combine(fixture.Path, "src", "tests", "test.cs"), "class Tests {}\n");
+        await File.WriteAllTextAsync(Path.Combine(fixture.Path, "src", "foo", "keep.cs"), "class Keep {}\n");
+
+        var result = await new CodePacker().PackAsync(new PackOptions
+        {
+            RootDirectory = fixture.Path,
+            IncludePatterns = ["**/Api", "/**/tests/**", " **/foo"],
+            ExcludePatterns = [" **/tests", "**/foo/keep.cs"]
+        });
+
+        result.Files.Select(file => file.RelativePath).ShouldBe(new[] { "src/Api/test.cs" });
+    }
+
+    [Fact]
+    public async Task PackAsync_MatchesWildcardFoldersAtAnyDepth()
+    {
+        using var fixture = new TemporaryDirectory();
+        var deepFoo = Path.Combine(fixture.Path, "one", "two", "three", "four", "five", "foo");
+        var deepBar = Path.Combine(fixture.Path, "alpha", "beta", "gamma", "bar");
+        Directory.CreateDirectory(deepFoo);
+        Directory.CreateDirectory(deepBar);
+        Directory.CreateDirectory(Path.Combine(fixture.Path, "other"));
+        await File.WriteAllTextAsync(Path.Combine(deepFoo, "foo.cs"), "class Foo {}");
+        await File.WriteAllTextAsync(Path.Combine(deepBar, "bar.cs"), "class Bar {}");
+        await File.WriteAllTextAsync(Path.Combine(fixture.Path, "other", "other.cs"), "class Other {}");
+
+        var result = await new CodePacker().PackAsync(new PackOptions
+        {
+            RootDirectory = fixture.Path,
+            IncludePatterns = ["**/foo/**", "**/bar"]
+        });
+
+        result.Files.Select(file => file.RelativePath).ShouldBe(new[]
+        {
+            "alpha/beta/gamma/bar/bar.cs",
+            "one/two/three/four/five/foo/foo.cs"
+        });
+    }
+
+    [Fact]
     public async Task PackAsync_RendersMarkdownAndTransformsContent()
     {
         using var fixture = new TemporaryDirectory();

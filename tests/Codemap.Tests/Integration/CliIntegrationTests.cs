@@ -107,6 +107,20 @@ public sealed class CliIntegrationTests
     }
 
     [Fact]
+    public async Task Cli_ConfiguredOutputMode_PrintsToStdoutByDefault()
+    {
+        using var fixture = new TemporaryDirectory();
+        await File.WriteAllTextAsync(Path.Combine(fixture.Path, "sample.cs"), "class Sample {}\n");
+        await File.WriteAllTextAsync(Path.Combine(fixture.Path, "codemap.json"), "{\"outputMode\":\"stdout\"}");
+
+        var result = await RunCliInDirectoryAsync(fixture.Path);
+
+        result.ExitCode.ShouldBe(0, result.StandardError);
+        result.StandardOutput.ShouldContain("class Sample {}");
+        File.Exists(Path.Combine(fixture.Path, "codemap-output.md")).ShouldBeFalse();
+    }
+
+    [Fact]
     public async Task Cli_PatchMode_PrefixesMarkdownContextWithPatchInstructions()
     {
         using var fixture = new TemporaryDirectory();
@@ -216,8 +230,8 @@ public sealed class CliIntegrationTests
         var outputPath = Path.Combine(fixture.Path, "result.json");
         var result = await RunCliInDirectoryAsync(
             fixture.Path,
-            "--include", "README.md,src,tests",
-            "--exclude", "skip.txt,tests",
+            "--include", "README.md, src, tests",
+            "--exclude", "skip.txt, tests",
             "--format", "json",
             "--output", outputPath);
 

@@ -8,11 +8,20 @@ public enum OutputFormat
     Json
 }
 
+public enum OutputMode
+{
+    File,
+    Stdout,
+    Clipboard
+}
+
 public sealed record PackOptions
 {
     public required string RootDirectory { get; init; }
     public string OutputPath { get; init; } = "codemap-output.md";
     public OutputFormat Format { get; init; } = OutputFormat.Markdown;
+    public OutputMode OutputMode { get; init; } = OutputMode.File;
+    public bool CopyToClipboard { get; init; }
     public IReadOnlyList<string> IncludePatterns { get; init; } = ["**/*"];
     public IReadOnlyList<string> ExcludePatterns { get; init; } = [];
     public bool IncludeFileSummary { get; init; } = true;

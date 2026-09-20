@@ -60,7 +60,7 @@ Codemap produces context. It does not execute AI output, run Skill instructions,
 | 🔢 | Token accounting | Reports per-file and total `cl100k_base` token counts. |
 | 📏 | Output limits | Enforces file-size and token budgets and can split large output. |
 | 🌐 | Remote repositories | Clones and packs a Git repository or selected branch. |
-| ⚙️ | Configuration | Loads `codemap.json` or `codemap.config.json`, with CLI overrides. |
+| ⚙️ | Configuration | Loads `codemap.json`, with CLI overrides. |
 | 🧭 | Stable processing order | Processes files in path order for repeatable results. |
 | 👀 | Watch mode | Reports local source changes so output can be refreshed. |
 
@@ -99,6 +99,12 @@ codemap --include "**/*.cs" --exclude "**/*.generated.cs,**/bin/**,**/obj/**"
 
 # Match a file name in any folder
 codemap --include "*.cs" --exclude "test-*.cs"
+
+# Match folders anywhere in the repository; spaces after commas are allowed
+codemap --include "**/Api, **/tests" --exclude "/**/generated, **/bin"
+
+# Match everything below folders anywhere in the repository
+codemap --include "/**/Api/**" --exclude "/**/tests/**"
 ```
 
 Pattern rules:
@@ -106,7 +112,8 @@ Pattern rules:
 - `*` matches any characters except `/`.
 - `**` matches across folders.
 - `?` matches one character.
-- A literal folder such as `src` includes or excludes everything below it.
+- A literal or wildcard folder such as `src` or `**/Api` includes or excludes everything below it.
+- Leading and trailing `/` are optional for repository-relative patterns.
 - Separate multiple files, folders, or patterns with commas.
 
 codemap also reads `.gitignore` and `.ignore` automatically.
@@ -250,12 +257,16 @@ codemap --help
 | `codemap [options]` | - | - | Pack the current directory into the configured output. |
 | `codemap stdout [options]` | - | - | Write packed output to standard output. |
 | `codemap clipboard [options]` | - | - | Copy packed output to the clipboard. |
+| `codemap config save [options]` | - | - | Save only supplied options into a persistent configuration. |
 | `--include` | `-i` | comma-separated globs | Include only matching paths. |
 | `--exclude` | `-e` | comma-separated globs | Add exclusion patterns for this run. |
 | `--format` | `-f` | `xml`, `markdown`, `md`, `json`, `plain`, `txt` | Output format. Defaults to Markdown. |
 | `--output` | `-o` | path | Output file path. Defaults to `codemap-output.md`. |
 | `--stdout` | - | flag | Write packed output to standard output. |
 | `--clipboard` | - | flag | Copy packed output to the clipboard. |
+| `--output-mode` | - | `file`, `stdout`, `clipboard` | Default output destination. Defaults to `file`. |
+| `--copy-to-clipboard` | - | flag | Also copy normal file or stdout output to the clipboard. |
+| `--no-copy-to-clipboard` | - | flag | Disable configured automatic clipboard copying for this run. |
 | `--max-file-size` | `-m` | bytes | Skip files larger than this size before reading them. |
 | `--token-budget` | `-t` | count | Fail if the final rendered output exceeds this token count. |
 | `--apply` | `-a` | patch file | Preview, validate, request approval for, and apply a unified Git diff. |
@@ -263,22 +274,33 @@ codemap --help
 | `--skills` | `-s` | comma-separated names or paths | Load named or explicit Skills. Repeat to load multiple values. |
 | `--watch` | `-w` | flag | Watch a directory and report changes. |
 | `--version` | `-v` | flag | Show the tool version. |
-| `--config` | `-c` | path | Configuration JSON file. Without this option, codemap searches for `codemap.json` and `codemap.config.json`. |
+| `--config` | `-c` | path | Configuration JSON file. Without this option, codemap searches for `codemap.json`. |
+| `--config-template` | - | path | Create a ready-to-edit configuration JSON file. |
+| `--path` | - | path | Configuration output path for `codemap config save`. |
+| `--global` | - | flag | Save or use the user-level default configuration. |
 | `--help` | `-h` | flag | Show command usage, options, and examples. |
 | `--remote` | `-r` | URL or `owner/repository` | Clone a remote Git repository into a temporary directory before packing. |
 | `--remote-branch` | `-b` | branch | Branch to clone when using `--remote`. |
 | `--no-summary` | - | flag | Remove file count and token summary from structured output. |
+| `--summary` | - | flag | Include file count and token summary. |
 | `--no-tree` | - | flag | Remove the directory/file listing from structured output. |
+| `--tree` | - | flag | Include the directory/file listing. |
 | `--line-numbers` | - | flag | Prefix each output line with its line number. |
+| `--no-line-numbers` | - | flag | Disable line numbers. |
 | `--remove-comments` | - | flag | Remove common comments before rendering. |
+| `--no-remove-comments` | - | flag | Preserve source comments. |
 | `--remove-empty-lines` | - | flag | Remove blank lines after other transformations. |
+| `--no-remove-empty-lines` | - | flag | Preserve blank lines. |
 | `--security-check` | - | flag | Scan original files with DevSkim and exclude files with findings. |
+| `--no-security-check` | - | flag | Disable security scanning. |
 | `--include-diffs` | - | flag | Include `git diff` output. |
+| `--no-include-diffs` | - | flag | Disable Git diff output. |
 | `--include-logs` | - | flag | Include recent one-line Git commits. |
+| `--no-include-logs` | - | flag | Disable Git commit output. |
 | `--include-logs-count` | - | count | Number of commits to include. Defaults to 20. |
 | `--split-output` | - | bytes | Split output into numbered files when the rendered content exceeds this size. |
 
-Boolean options are enabled by writing the flag.
+Boolean options can be enabled or disabled explicitly. For example, `--security-check` enables scanning and `--no-security-check` disables it, overriding the configuration file for that run.
 
 ### Output formats
 
@@ -293,14 +315,74 @@ Boolean options are enabled by writing the flag.
 
 ## Configuration
 
-Configuration uses JSON. codemap automatically loads `codemap.json` or `codemap.config.json` from the source root. Use `--config` to select another file.
+Configuration uses JSON. codemap automatically loads `codemap.json` from the source root. If no repository config exists, it checks the user-level config:
+
+| Platform | Default user config |
+| --- | --- |
+| Windows | `%APPDATA%/codemap/codemap.json` |
+| Linux | `~/.config/codemap/codemap.json` |
+| macOS | `~/Library/Application Support/codemap/codemap.json` |
+
+Use `--config` to select another file. User-level config is independent of the global tool installation directory, so tool upgrades do not remove it.
+
+Generate a starter configuration without writing JSON by hand:
+
+```bash
+codemap --config-template codemap.json
+```
+
+Save CLI overrides into the current configuration. Only options supplied to this command change; existing settings are preserved:
+
+```bash
+codemap config save \
+	--removeComments true \
+	--removeEmptyLines true \
+	--enableSecurityCheck true \
+	--copyToClipboard true
+```
+
+Boolean values use explicit `true` or `false` values when saving configuration. For example:
+
+```bash
+codemap config save \
+	--max-file-size 500000 \
+	--token-budget 12000 \
+	--includeGitDiffs false
+```
+
+By default this updates `codemap.json`, which later commands load automatically. Use `--path` for another file and `--config` to choose the file being overridden:
+
+```bash
+codemap config save --config team.codemap.json --path team.codemap.json \
+	--include "src, tests" --exclude "**/bin/**, **/obj/**"
+codemap --config team.codemap.json
+```
+
+Save defaults for all repositories with:
+
+```bash
+codemap config save --global \
+	--copyToClipboard true \
+	--includeGitLogs true \
+	--include-logs-count 10
+```
+
+The global file uses the platform path shown above.
+
+Choose the default output destination with `outputMode`. The default is `file`:
+
+```bash
+codemap config save --global --output-mode stdout
+```
+
+Valid values are `file`, `stdout`, and `clipboard`. Explicit `--stdout`, `--clipboard`, or `stdout`/`clipboard` commands override the configured mode for one run.
 
 ```json
 {
 	"outputPath": "artifacts/repository.md",
 	"format": "Markdown",
-	"includePatterns": ["**/*.cs", "**/*.md"],
-	"excludePatterns": ["**/test-data/**"],
+	"outputMode": "file",
+	"copyToClipboard": true,
 	"includeFileSummary": true,
 	"includeDirectoryStructure": true,
 	"showLineNumbers": false,
@@ -315,6 +397,8 @@ Configuration uses JSON. codemap automatically loads `codemap.json` or `codemap.
 	"splitOutputBytes": 200000
 }
 ```
+
+When `copyToClipboard` is `true`, codemap writes its normal file output or stdout output and also copies the same final content to the clipboard. Use `--copy-to-clipboard` for a one-time override or `--no-copy-to-clipboard` to disable a configured setting for one run. `--clipboard` remains clipboard-only output.
 
 Command-line values override configuration values. For list options such as `--include` and `--exclude`, the command-line value replaces the configured list.
 
