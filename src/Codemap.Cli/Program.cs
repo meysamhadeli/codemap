@@ -241,8 +241,8 @@ static void PrintHelp()
 	Console.WriteLine("  -b, --remote-branch <branch>  Branch to clone");
 	Console.WriteLine();
 	Console.WriteLine("Selection:");
-	Console.WriteLine("  -i, --include <patterns>      Comma-separated include globs");
-	Console.WriteLine("  -e, --exclude <patterns>      Comma-separated exclusion globs");
+	Console.WriteLine("  -i, --include <patterns>      Files, folders, or comma-separated globs");
+	Console.WriteLine("  -e, --exclude <patterns>      Files, folders, or comma-separated globs");
 	Console.WriteLine("  -m, --max-file-size <bytes>   Skip larger files");
 	Console.WriteLine("  -c, --config <path>            Configuration JSON file");
 	Console.WriteLine();
@@ -275,6 +275,7 @@ static void PrintHelp()
 	Console.WriteLine();
 	Console.WriteLine("Examples:");
 	Console.WriteLine("  codemap --format markdown --output repository.md");
+	Console.WriteLine("  codemap --include \"README.md,src,tests/**/*.cs\" --exclude \"**/bin/**,**/*.generated.cs\"");
 	Console.WriteLine("  codemap --include \"**/*.cs\" --security-check");
 	Console.WriteLine("  codemap --remote microsoft/generative-ai-for-beginners --remote-branch main");
 	Console.WriteLine();

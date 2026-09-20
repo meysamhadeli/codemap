@@ -83,17 +83,31 @@ public sealed class CodePacker
         {
             var negated = pattern.StartsWith('!');
             var value = negated ? pattern[1..] : pattern;
-            if (Matches(relativePath, value)) excluded = !negated;
+            if (Matches(relativePath, value, options.RootDirectory)) excluded = !negated;
         }
         if (excluded) return false;
 
-        return options.IncludePatterns.Count == 0 || options.IncludePatterns.Any(pattern => Matches(relativePath, pattern));
+        return options.IncludePatterns.Count == 0 || options.IncludePatterns.Any(pattern => Matches(relativePath, pattern, options.RootDirectory));
     }
 
-    private static bool Matches(string path, string pattern)
+    private static bool Matches(string path, string pattern, string rootDirectory)
     {
         var normalized = Normalize(pattern).TrimStart('/').TrimEnd('/');
+        if (normalized.Length == 0)
+        {
+            return false;
+        }
+
+        var literalDirectory = !HasWildcard(normalized)
+            && Directory.Exists(Path.Combine(rootDirectory, normalized.Replace('/', Path.DirectorySeparatorChar)));
+        if (literalDirectory)
+        {
+            return path.Equals(normalized, StringComparison.OrdinalIgnoreCase)
+                || path.StartsWith(normalized + "/", StringComparison.OrdinalIgnoreCase);
+        }
+
         var expression = Regex.Escape(normalized).Replace("\\*\\*/", "(?:.*/)?").Replace("\\*\\*", ".*").Replace("\\*", "[^/]*");
+        expression = expression.Replace("\\?", "[^/]");
         if (!normalized.Contains('/'))
         {
             expression = "(?:.*/)?" + expression;
@@ -102,6 +116,8 @@ public sealed class CodePacker
         expression = "^" + expression + (pattern.EndsWith('/') ? "(?:/.*)?" : string.Empty) + "$";
         return Regex.IsMatch(path, expression, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
     }
+
+    private static bool HasWildcard(string pattern) => pattern.Contains('*') || pattern.Contains('?');
 
     private static string Transform(string content, PackOptions options)
     {

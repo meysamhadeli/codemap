@@ -34,6 +34,46 @@ public sealed class CodePackerTests
     }
 
     [Fact]
+    public async Task PackAsync_IncludeAndExcludePatternsSupportFilesFoldersAndGlobs()
+    {
+        using var fixture = new TemporaryDirectory();
+        await File.WriteAllTextAsync(Path.Combine(fixture.Path, "root.cs"), "class Root {}\n");
+        await File.WriteAllTextAsync(Path.Combine(fixture.Path, "other.txt"), "other\n");
+        Directory.CreateDirectory(Path.Combine(fixture.Path, "src", "nested"));
+        await File.WriteAllTextAsync(Path.Combine(fixture.Path, "src", "main.cs"), "class Main {}\n");
+        await File.WriteAllTextAsync(Path.Combine(fixture.Path, "src", "nested", "helper.cs"), "class Helper {}\n");
+        Directory.CreateDirectory(Path.Combine(fixture.Path, "generated"));
+        await File.WriteAllTextAsync(Path.Combine(fixture.Path, "generated", "generated.cs"), "class Generated {}\n");
+
+        var result = await new CodePacker().PackAsync(new PackOptions
+        {
+            RootDirectory = fixture.Path,
+            IncludePatterns = ["root.cs", "src"],
+            ExcludePatterns = ["**/nested/*.cs", "generated"]
+        });
+
+        result.Files.Select(file => file.RelativePath).ShouldBe(new[] { "root.cs", "src/main.cs" });
+    }
+
+    [Fact]
+    public async Task PackAsync_SingleStarMatchesFilesInAnyFolder()
+    {
+        using var fixture = new TemporaryDirectory();
+        await File.WriteAllTextAsync(Path.Combine(fixture.Path, "root.cs"), "class Root {}\n");
+        Directory.CreateDirectory(Path.Combine(fixture.Path, "src"));
+        await File.WriteAllTextAsync(Path.Combine(fixture.Path, "src", "nested.cs"), "class Nested {}\n");
+        await File.WriteAllTextAsync(Path.Combine(fixture.Path, "src", "nested.txt"), "nested\n");
+
+        var result = await new CodePacker().PackAsync(new PackOptions
+        {
+            RootDirectory = fixture.Path,
+            IncludePatterns = ["*.cs"]
+        });
+
+        result.Files.Select(file => file.RelativePath).ShouldBe(new[] { "root.cs", "src/nested.cs" });
+    }
+
+    [Fact]
     public async Task PackAsync_RendersMarkdownAndTransformsContent()
     {
         using var fixture = new TemporaryDirectory();

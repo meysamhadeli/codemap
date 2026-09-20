@@ -21,7 +21,7 @@ flowchart LR
 ```
 
 1. **Discover**: `CodePacker` finds files beneath the configured root in deterministic path order.
-2. **Filter**: include patterns, default exclusions, custom exclude patterns, `.gitignore`, and `.ignore` determine which paths remain.
+2. **Filter**: include patterns, default exclusions, custom exclude patterns, `.gitignore`, and `.ignore` determine which paths remain. Include and exclude values can be literal files, literal folders, or comma-separated glob patterns using `*`, `**`, and `?`.
 3. **Transform**: optional line numbers, comment removal, and empty-line removal modify content.
 4. **Render**: renderers produce XML, Markdown, plain text, or JSON.
 5. **Report**: the result includes file count, character count, token counts, Git metadata, and security exclusions.

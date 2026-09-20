@@ -88,6 +88,27 @@ codemap \
 	--output source-context.md
 ```
 
+Both options accept individual files, folders, comma-separated values, and glob patterns:
+
+```bash
+# One file and one folder, including all files below the folder
+codemap --include "README.md,src"
+
+# Every C# file, except generated files and build folders
+codemap --include "**/*.cs" --exclude "**/*.generated.cs,**/bin/**,**/obj/**"
+
+# Match a file name in any folder
+codemap --include "*.cs" --exclude "test-*.cs"
+```
+
+Pattern rules:
+
+- `*` matches any characters except `/`.
+- `**` matches across folders.
+- `?` matches one character.
+- A literal folder such as `src` includes or excludes everything below it.
+- Separate multiple files, folders, or patterns with commas.
+
 codemap also reads `.gitignore` and `.ignore` automatically.
 
 The same selection can use short aliases: `codemap -i "src/**/*.cs" -e "**/bin/**,**/obj/**" -f markdown -o source-context.md`.

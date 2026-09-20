@@ -202,6 +202,35 @@ public sealed class CliIntegrationTests
     }
 
     [Fact]
+    public async Task Cli_IncludeAndExcludeCombineFilesAndFolders()
+    {
+        using var fixture = new TemporaryDirectory();
+        await File.WriteAllTextAsync(Path.Combine(fixture.Path, "README.md"), "readme\n");
+        await File.WriteAllTextAsync(Path.Combine(fixture.Path, "keep.txt"), "keep\n");
+        await File.WriteAllTextAsync(Path.Combine(fixture.Path, "skip.txt"), "skip\n");
+        Directory.CreateDirectory(Path.Combine(fixture.Path, "src"));
+        await File.WriteAllTextAsync(Path.Combine(fixture.Path, "src", "main.cs"), "class Main {}\n");
+        Directory.CreateDirectory(Path.Combine(fixture.Path, "tests"));
+        await File.WriteAllTextAsync(Path.Combine(fixture.Path, "tests", "main.tests.cs"), "class Tests {}\n");
+
+        var outputPath = Path.Combine(fixture.Path, "result.json");
+        var result = await RunCliInDirectoryAsync(
+            fixture.Path,
+            "--include", "README.md,src,tests",
+            "--exclude", "skip.txt,tests",
+            "--format", "json",
+            "--output", outputPath);
+
+        result.ExitCode.ShouldBe(0, result.StandardError);
+        var output = await File.ReadAllTextAsync(outputPath);
+        output.ShouldContain("README.md");
+        output.ShouldContain("src/main.cs");
+        output.ShouldNotContain("keep.txt");
+        output.ShouldNotContain("skip.txt");
+        output.ShouldNotContain("tests/main.tests.cs");
+    }
+
+    [Fact]
     public async Task Cli_ShortAlias_WorksForTokenBudget()
     {
         using var fixture = new TemporaryDirectory();
