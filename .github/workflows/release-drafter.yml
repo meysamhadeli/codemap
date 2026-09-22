@@ -85,12 +85,15 @@ jobs:
               }[type] || '📝 Other changes';
               directCommits.push({
                 category,
-                line: `<!-- codemap:direct-commit:${commit.sha} -->\n- ${type}: ${description} @${author}`
+                line: `- ${type}: ${description} @${author}`
               });
             }
 
             let body = draft.body || '';
             body = body.replace(/<!-- codemap:direct-commit:[^>]+ -->\r?\n- [^\r\n]*(?:\r?\n|$)/g, '');
+            for (const commit of directCommits) {
+              body = body.replace(`${commit.line}\n`, '');
+            }
             const grouped = new Map();
             for (const commit of directCommits) {
               if (!grouped.has(commit.category)) grouped.set(commit.category, []);
