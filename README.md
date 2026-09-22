@@ -56,7 +56,7 @@ Codemap produces context. It does not execute AI output, run Skill instructions,
 | 🔢 | Token accounting | Reports per-file and total `cl100k_base` token counts. |
 | 📏 | Output limits | Enforces file-size and token budgets and can split large output. |
 | 🌐 | Remote repositories | Clones and packs a Git repository or selected branch. |
-| ⚙️ | Configuration | Loads `codemap.json`, with CLI overrides. |
+| ⚙️ | Configuration | Loads one global configuration file, with CLI overrides. |
 | 👀 | Watch mode | Reports local source changes so output can be refreshed. |
 | 🌳 | Repository context | Adds file summaries and directory structure to supported formats. |
 | 🧹 | Content transformations | Removes comments or empty lines and adds line numbers. |
@@ -271,10 +271,7 @@ codemap --help
 | `--skills` | `-s` | comma-separated names or paths | Load named or explicit Skills. Repeat to load multiple values. |
 | `--watch` | `-w` | flag | Watch a directory and report changes. |
 | `--version` | `-v` | flag | Show the tool version. |
-| `--config` | `-c` | path | Configuration JSON file. Without this option, codemap searches for `codemap.json`. |
 | `--config-template` | - | path | Create a ready-to-edit configuration JSON file. |
-| `--path` | - | path | Configuration output path for `codemap config save`. |
-| `--global` | - | flag | Save or use the user-level default configuration. |
 | `--help` | `-h` | flag | Show command usage, options, and examples. |
 | `--remote` | `-r` | URL or `owner/repository` | Clone a remote Git repository into a temporary directory before packing. |
 | `--remote-branch` | `-b` | branch | Branch to clone when using `--remote`. |
@@ -312,23 +309,15 @@ Boolean options can be enabled or disabled explicitly. For example, `--security-
 
 ## Configuration
 
-Configuration uses JSON. codemap automatically loads `codemap.json` from the source root. If no repository config exists, it checks the user-level config:
+Configuration uses JSON. codemap loads one global configuration file for every source repository:
 
-| Platform | Default user config |
+| Operating system | Global configuration path |
 | --- | --- |
-| Windows | `%APPDATA%/codemap/codemap.json` |
-| Linux | `~/.config/codemap/codemap.json` |
-| macOS | `~/Library/Application Support/codemap/codemap.json` |
+| Windows | `%USERPROFILE%\.codemap\codemap.json` |
+| Linux | `~/.codemap/codemap.json` |
+| macOS | `~/.codemap/codemap.json` |
 
-Use `--config` to select another file. User-level config is independent of the global tool installation directory, so tool upgrades do not remove it.
-
-Generate a starter configuration without writing JSON by hand:
-
-```bash
-codemap --config-template codemap.json
-```
-
-Save CLI overrides into the current configuration. Only options supplied to this command change; existing settings are preserved:
+Save CLI overrides into the global configuration. If the file does not exist, this command creates it. Only supplied options change; existing settings are preserved:
 
 ```bash
 codemap config save \
@@ -347,29 +336,28 @@ codemap config save \
 	--includeGitDiffs false
 ```
 
-By default this updates `codemap.json`, which later commands load automatically. Use `--path` for another file and `--config` to choose the file being overridden:
+`config save` always updates the global configuration file, which later commands load automatically:
 
 ```bash
-codemap config save --config team.codemap.json --path team.codemap.json \
+codemap config save \
 	--include "src, tests" --exclude "**/bin/**, **/obj/**"
-codemap --config team.codemap.json
 ```
 
-Save defaults for all repositories with:
+For example:
 
 ```bash
-codemap config save --global \
+codemap config save \
 	--copyToClipboard true \
 	--includeGitLogs true \
 	--include-logs-count 10
 ```
 
-The global file uses the platform path shown above.
+The global file uses this same path on every platform.
 
 Choose the default output destination with `outputMode`. The default is `file`:
 
 ```bash
-codemap config save --global --output-mode stdout
+codemap config save --output-mode stdout
 ```
 
 Valid values are `file`, `stdout`, and `clipboard`. Explicit `--stdout`, `--clipboard`, or `stdout`/`clipboard` commands override the configured mode for one run.

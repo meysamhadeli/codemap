@@ -30,8 +30,7 @@ if (arguments.Count >= 2
 	&& arguments[0].Equals("config", StringComparison.OrdinalIgnoreCase)
 	&& arguments[1].Equals("save", StringComparison.OrdinalIgnoreCase))
 {
-	var configOutputPath = GetOption(arguments, "--path")
-		?? (HasFlag(arguments, "--global") ? GetUserConfigPath() : "codemap.json");
+	var configOutputPath = GetUserConfigPath();
 	await SaveConfigurationAsync(configOutputPath, arguments);
 	Console.WriteLine($"Saved configuration to {configOutputPath}.");
 	return 0;
@@ -84,7 +83,7 @@ var outputModeOption = GetOption(arguments, "--output-mode");
 var outputMode = ParseOutputMode(outputModeOption);
 var skillSpecifications = GetOptions(arguments, "--skills", "-s");
 var remote = GetOption(arguments, "--remote", "-r");
-var configPath = GetOption(arguments, "--config", "-c") ?? FindDefaultConfig(root);
+var configPath = GetUserConfigPath();
 var include = GetOption(arguments, "--include", "-i");
 var exclude = GetOption(arguments, "--exclude", "-e");
 var configTemplatePath = GetOption(arguments, "--config-template");
@@ -129,7 +128,7 @@ try
 		: await RepositorySource.ResolveAsync(remote, GetOption(arguments, "--remote-branch", "-b"), CancellationToken.None);
 	root = sourceRoot;
 	options = options with { RootDirectory = sourceRoot };
-	if (configPath is not null)
+	if (File.Exists(configPath))
 	{
 		options = (await PackConfiguration.LoadAsync(configPath)).ApplyTo(options);
 	}
@@ -240,8 +239,7 @@ static async Task SaveConfigurationAsync(string path, IReadOnlyList<string> argu
 		Directory.CreateDirectory(directory);
 	}
 
-	var sourcePath = GetOption(arguments, "--config", "-c")
-		?? (HasFlag(arguments, "--global") ? GetUserConfigPath() : FindDefaultConfig(Directory.GetCurrentDirectory()));
+	var sourcePath = GetUserConfigPath();
 	var configuration = sourcePath is not null && File.Exists(sourcePath)
 		? JsonNode.Parse(await File.ReadAllTextAsync(sourcePath)) as JsonObject ?? new JsonObject()
 		: new JsonObject();
@@ -344,30 +342,10 @@ static long? GetLongOption(IReadOnlyList<string> arguments, params string[] name
 	return value is null ? null : long.Parse(value, System.Globalization.CultureInfo.InvariantCulture);
 }
 
-static string? FindDefaultConfig(string root)
-{
-	var repositoryConfigPath = Path.Combine(root, "codemap.json");
-	if (File.Exists(repositoryConfigPath)) return repositoryConfigPath;
-
-	var userDirectory = Path.GetDirectoryName(GetUserConfigPath())!;
-	var userConfigPath = Path.Combine(userDirectory, "codemap.json");
-	if (File.Exists(userConfigPath)) return userConfigPath;
-
-	return null;
-}
-
 static string GetUserConfigPath()
 {
-	var configDirectory = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-
-	if (string.IsNullOrWhiteSpace(configDirectory))
-	{
-		configDirectory = Path.Combine(
-			Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-			".config");
-	}
-
-	return Path.Combine(configDirectory, "codemap", "codemap.json");
+	var userDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+	return Path.Combine(userDirectory, ".codemap", "codemap.json");
 }
 
 static OutputFormat ParseFormat(string? value) => value?.ToLowerInvariant() switch
@@ -404,7 +382,6 @@ static void PrintHelp()
 	Console.WriteLine("  -i, --include <patterns>      Files, folders, or comma-separated globs");
 	Console.WriteLine("  -e, --exclude <patterns>      Files, folders, or comma-separated globs");
 	Console.WriteLine("  -m, --max-file-size <bytes>   Skip larger files");
-	Console.WriteLine("  -c, --config <path>            Configuration JSON file");
 	Console.WriteLine();
 	Console.WriteLine("Output:");
 	Console.WriteLine("  -f, --format <xml|markdown|json|plain>");
@@ -423,8 +400,6 @@ static void PrintHelp()
 	Console.WriteLine("  -p, --patch                   Add patch-generation instructions in selected format");
 	Console.WriteLine("  -s, --skills <names|paths>     Load named or explicit Skills; comma-separated");
 	Console.WriteLine("  --config-template <path>      Create a ready-to-edit configuration file");
-	Console.WriteLine("  --path <path>                 Config output path for 'config save'");
-	Console.WriteLine("  --global                      Use the user-level config path for 'config save'");
 	Console.WriteLine();
 	Console.WriteLine("Transformations and limits:");
 	Console.WriteLine("  --security-check              Exclude files with DevSkim findings");
