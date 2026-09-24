@@ -13,6 +13,11 @@ public sealed class PatchSkillEvaluationTests
     [Fact]
     public async Task PatchSkill_PassesHardLiveIntegrationScenarios()
     {
+        if (string.Equals(Environment.GetEnvironmentVariable("CI"), "true", StringComparison.OrdinalIgnoreCase))
+        {
+            Assert.Skip("Live model evaluation is opt-in locally and does not run in standard CI.");
+        }
+
         var settings = LiveEvaluationSettings.Load();
         if (!settings.IsEnabled)
         {
