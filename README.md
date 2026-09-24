@@ -24,11 +24,10 @@ dotnet tool install --global Codemap.Cli
 
 Then run it from any directory with `codemap`.
 
-Running `codemap` without options scans the current directory. Change into the repository directory before running it.
+Running `codemap` without options scans the current directory and copies the generated context to the clipboard by default. Change into the repository directory before running it.
 
 > [!TIP]
 > **Quick Start**
->
 > - **Include selected paths:** `codemap -i "src,tests" -e "**/bin/**,**/obj/**"`
 > - **Generate patch context:** `codemap -p`
 > - **Preview and apply a patch:** `codemap -a changes.patch`
@@ -61,7 +60,7 @@ Codemap produces context. It does not execute AI output, run Skill instructions,
 
 ## How to Run
 
-codemap's main workflow is simple: choose a source directory, select an output format, and write the generated repository context to a file. The examples below focus on core commands.
+codemap's main workflow is simple: choose a source directory, select an output format, and copy the generated repository context to the clipboard or choose another output destination. The examples below focus on core commands.
 
 ### ❔ Help
 
@@ -254,7 +253,7 @@ codemap --help
 | `--output` | `-o` | path | Output file path. Defaults to `codemap-output.md`. |
 | `--stdout` | - | flag | Write packed output to standard output. |
 | `--clipboard` | - | flag | Copy packed output to the clipboard. |
-| `--output-mode` | - | `file`, `stdout`, `clipboard` | Default output destination. Defaults to `file`. |
+| `--output-mode` | - | `file`, `stdout`, `clipboard` | Default output destination. Defaults to `clipboard`. |
 | `--copy-to-clipboard` | - | flag | Also copy normal file or stdout output to the clipboard. |
 | `--no-copy-to-clipboard` | - | flag | Disable configured automatic clipboard copying for this run. |
 | `--max-file-size` | `-m` | bytes | Skip files larger than this size before reading them. |
