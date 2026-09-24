@@ -10,6 +10,8 @@ const string PackConfigurationTemplate = """
 	"format": "markdown",
 	"outputMode": "clipboard",
 	"copyToClipboard": false,
+	"includePatterns": ["**/*"],
+	"excludePatterns": ["bin", "obj"],
 	"includeFileSummary": true,
 	"includeDirectoryStructure": true,
 	"showLineNumbers": false,

@@ -334,6 +334,17 @@ codemap config \
 	--include "src, tests" --exclude "**/bin/**, **/obj/**"
 ```
 
+The same settings can be edited directly in the global JSON file. `includePatterns` is a global allow-list; `excludePatterns` removes matching paths from it. Literal directories match all descendants, so this excludes build output everywhere:
+
+```json
+{
+	"includePatterns": ["**/*"],
+	"excludePatterns": ["/bin", "/obj"]
+}
+```
+
+Global includes are useful when every repository should be limited to a file family, for example `"**/*.cs"`. Built-in exclusions for `.git`, `bin`, `obj`, `node_modules`, `dist`, and `coverage` apply even when they are not listed in configuration.
+
 For example:
 
 ```bash

@@ -31,6 +31,20 @@ public sealed class PackConfigurationTests
     }
 
     [Fact]
+    public async Task LoadAsync_ReadsGlobalIncludeAndExcludePatterns()
+    {
+        using var fixture = new TemporaryDirectory();
+        var path = Path.Combine(fixture.Path, "codemap.json");
+        await File.WriteAllTextAsync(path, "{\"includePatterns\":[\"src\",\"README.md\"],\"excludePatterns\":[\"/bin\",\"/obj\"]}");
+
+        var configuration = await PackConfiguration.LoadAsync(path);
+        var options = configuration.ApplyTo(new PackOptions { RootDirectory = fixture.Path });
+
+        options.IncludePatterns.ShouldBe(new[] { "src", "README.md" });
+        options.ExcludePatterns.ShouldBe(new[] { "/bin", "/obj" });
+    }
+
+    [Fact]
     public async Task PackAsync_UsesGitignoreAndExcludeFiles()
     {
         using var fixture = new TemporaryDirectory();
