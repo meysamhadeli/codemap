@@ -63,7 +63,7 @@ public sealed class CliIntegrationTests
         await File.WriteAllTextAsync(Path.Combine(fixture.Path, "sample.cs"), "class Sample {}\n");
         var outputPath = Path.Combine(fixture.Path, "result.json");
 
-        var packResult = await RunCliInDirectoryAsync(fixture.Path, "-f", "json", "-o", outputPath);
+        var packResult = await RunCliInDirectoryAsync(fixture.Path, "-f", "json", "-o", outputPath, "--output-mode", "file");
 
         packResult.ExitCode.ShouldBe(0, packResult.StandardError);
         (await File.ReadAllTextAsync(outputPath)).ShouldContain("\"files\"");
@@ -85,7 +85,7 @@ public sealed class CliIntegrationTests
         await File.WriteAllTextAsync(Path.Combine(fixture.Path, "sample.cs"), "class Sample {}\n");
         var outputPath = Path.Combine(fixture.Path, "result.json");
 
-        var result = await RunCliInDirectoryAsync(fixture.Path, "--format", "json", "--output", outputPath);
+        var result = await RunCliInDirectoryAsync(fixture.Path, "--format", "json", "--output", outputPath, "--output-mode", "file");
 
         result.ExitCode.ShouldBe(0, result.StandardError);
         var output = await File.ReadAllTextAsync(outputPath);
@@ -116,7 +116,7 @@ public sealed class CliIntegrationTests
         await File.WriteAllTextAsync(Path.Combine(fixture.Path, "codemap.json"), "{\"outputMode\":\"stdout\"}");
 
         var outputPath = Path.Combine(fixture.Path, "configured.md");
-        var result = await RunCliInDirectoryAsync(fixture.Path, "--output", outputPath);
+        var result = await RunCliInDirectoryAsync(fixture.Path, "--output", outputPath, "--output-mode", "file");
 
         result.ExitCode.ShouldBe(0, result.StandardError);
         File.Exists(outputPath).ShouldBeTrue();
@@ -207,7 +207,7 @@ public sealed class CliIntegrationTests
         var outputPath = Path.Combine(fixture.Path, "result.json");
 
         var result = await RunCliInDirectoryAsync(
-            fixture.Path, "--exclude", "secret.cs", "--format", "json", "--output", outputPath);
+            fixture.Path, "--exclude", "secret.cs", "--format", "json", "--output", outputPath, "--output-mode", "file");
 
         result.ExitCode.ShouldBe(0, result.StandardError);
         var output = await File.ReadAllTextAsync(outputPath);
@@ -224,7 +224,7 @@ public sealed class CliIntegrationTests
         var outputPath = Path.Combine(fixture.Path, "result.json");
 
         var result = await RunCliInDirectoryAsync(
-            fixture.Path, "-i", "**/*.cs", "-e", "secret.cs", "-f", "json", "-o", outputPath);
+            fixture.Path, "-i", "**/*.cs", "-e", "secret.cs", "-f", "json", "-o", outputPath, "--output-mode", "file");
 
         result.ExitCode.ShouldBe(0, result.StandardError);
         var output = await File.ReadAllTextAsync(outputPath);
@@ -250,7 +250,8 @@ public sealed class CliIntegrationTests
             "--include", "README.md, src, tests",
             "--exclude", "skip.txt, tests",
             "--format", "json",
-            "--output", outputPath);
+            "--output", outputPath,
+            "--output-mode", "file");
 
         result.ExitCode.ShouldBe(0, result.StandardError);
         var output = await File.ReadAllTextAsync(outputPath);
@@ -274,7 +275,8 @@ public sealed class CliIntegrationTests
             fixture.Path,
             "--include", "Program.cs, Properties",
             "--format", "json",
-            "--output", Path.Combine(fixture.Path, "result.json"));
+            "--output", Path.Combine(fixture.Path, "result.json"),
+            "--output-mode", "file");
 
         result.ExitCode.ShouldBe(0, result.StandardError);
         var output = await File.ReadAllTextAsync(Path.Combine(fixture.Path, "result.json"));
@@ -300,7 +302,8 @@ public sealed class CliIntegrationTests
             fixture.Path,
             "--include", includePatterns,
             "--format", "json",
-            "--output", outputPath);
+            "--output", outputPath,
+            "--output-mode", "file");
 
         result.ExitCode.ShouldBe(0, result.StandardError);
         var output = await File.ReadAllTextAsync(outputPath);
@@ -317,7 +320,7 @@ public sealed class CliIntegrationTests
         var outputPath = Path.Combine(fixture.Path, "result.json");
 
         var result = await RunCliInDirectoryAsync(
-            fixture.Path, "-t", "1", "-f", "json", "-o", outputPath);
+            fixture.Path, "-t", "1", "-f", "json", "-o", outputPath, "--output-mode", "file");
 
         result.ExitCode.ShouldBe(1);
         result.StandardError.ShouldContain("token budget");
@@ -330,7 +333,7 @@ public sealed class CliIntegrationTests
         await File.WriteAllTextAsync(Path.Combine(fixture.Path, "sample.txt"), new string('x', 100));
         var outputPath = Path.Combine(fixture.Path, "result.txt");
 
-        var result = await RunCliInDirectoryAsync(fixture.Path, "--format", "plain", "--output", outputPath, "--split-output", "10");
+        var result = await RunCliInDirectoryAsync(fixture.Path, "--format", "plain", "--output", outputPath, "--output-mode", "file", "--split-output", "10");
 
         result.ExitCode.ShouldBe(0, result.StandardError);
         File.Exists(outputPath + ".1").ShouldBeTrue();
@@ -352,7 +355,7 @@ public sealed class CliIntegrationTests
         var outputPath = Path.Combine(output.Path, "remote.json");
         var result = await RunCliAsync(
             "--remote", new Uri(source.Path).AbsoluteUri, "--remote-branch", "main",
-            "--format", "json", "--output", outputPath);
+            "--format", "json", "--output", outputPath, "--output-mode", "file");
 
         result.ExitCode.ShouldBe(0, result.StandardError);
         (await File.ReadAllTextAsync(outputPath)).ShouldContain("remote.cs");
@@ -365,7 +368,7 @@ public sealed class CliIntegrationTests
         await File.WriteAllTextAsync(Path.Combine(fixture.Path, "sample.cs"), "class Sample {}\n");
         var outputPath = Path.Combine(fixture.Path, "watch.xml");
         var result = await RunCliUntilOutputAsync(
-            fixture.Path, new[] { "--output", outputPath, "-w" }, "Watching for changes.");
+            fixture.Path, new[] { "--output", outputPath, "--output-mode", "file", "-w" }, "Watching for changes.");
 
         result.StandardOutput.ShouldContain("Watching for changes.");
     }
