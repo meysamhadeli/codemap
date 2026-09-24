@@ -30,18 +30,27 @@ jobs:
       - name: Add direct Conventional Commits
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: actions/github-script@v7
+        env:
+          DRAFT_RELEASE_ID: ${{ steps.drafter.outputs.id }}
         with:
           script: |
+            const draftReleaseId = Number(process.env.DRAFT_RELEASE_ID);
+            if (!Number.isInteger(draftReleaseId) || draftReleaseId <= 0) {
+              core.setFailed('Release Drafter did not return a draft release ID.');
+              return;
+            }
+
+            const draftResponse = await github.rest.repos.getRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: draftReleaseId
+            });
+            const draft = draftResponse.data;
             const releases = await github.paginate(github.rest.repos.listReleases, {
               owner: context.repo.owner,
               repo: context.repo.repo,
               per_page: 100
             });
-            const draft = releases.find(release => release.draft);
-            if (!draft) {
-              core.setFailed('Release Drafter did not create a draft release.');
-              return;
-            }
 
             const previousRelease = releases.find(release => !release.draft && !release.prerelease);
             if (!previousRelease) {
