@@ -12,6 +12,8 @@ public sealed class CliIntegrationTests
 
         result.ExitCode.ShouldBe(0);
         result.StandardOutput.ShouldContain("codemap [options]");
+        result.StandardOutput.ShouldContain("codemap config [options]");
+        result.StandardOutput.ShouldNotContain("--config-template");
         result.StandardOutput.ShouldContain("--help");
         clipboardHelp.ExitCode.ShouldBe(0);
         clipboardHelp.StandardOutput.ShouldContain("clipboard");
@@ -136,6 +138,20 @@ public sealed class CliIntegrationTests
     }
 
     [Fact]
+    public async Task Cli_PatchMode_DefaultsToStandardOutput()
+    {
+        using var fixture = new TemporaryDirectory();
+        await File.WriteAllTextAsync(Path.Combine(fixture.Path, "sample.cs"), "class Sample {}\n");
+
+        var result = await RunCliInDirectoryAsync(fixture.Path, "-p");
+
+        result.ExitCode.ShouldBe(0, result.StandardError);
+        result.StandardOutput.ShouldStartWith("# Git Patch Generation Instructions");
+        result.StandardOutput.ShouldContain("class Sample {}");
+        result.StandardError.ShouldBeEmpty();
+    }
+
+    [Fact]
     public async Task Cli_SkillOption_LoadsExplicitSkill()
     {
         using var fixture = new TemporaryDirectory();
@@ -243,6 +259,54 @@ public sealed class CliIntegrationTests
         output.ShouldNotContain("keep.txt");
         output.ShouldNotContain("skip.txt");
         output.ShouldNotContain("tests/main.tests.cs");
+    }
+
+    [Fact]
+    public async Task Cli_IncludePatternsTrimWhitespaceAfterComma()
+    {
+        using var fixture = new TemporaryDirectory();
+        await File.WriteAllTextAsync(Path.Combine(fixture.Path, "Program.cs"), "class Program {}");
+        Directory.CreateDirectory(Path.Combine(fixture.Path, "Properties"));
+        await File.WriteAllTextAsync(Path.Combine(fixture.Path, "Properties", "launchSettings.json"), "{}");
+        await File.WriteAllTextAsync(Path.Combine(fixture.Path, "README.md"), "readme");
+
+        var result = await RunCliInDirectoryAsync(
+            fixture.Path,
+            "--include", "Program.cs, Properties",
+            "--format", "json",
+            "--output", Path.Combine(fixture.Path, "result.json"));
+
+        result.ExitCode.ShouldBe(0, result.StandardError);
+        var output = await File.ReadAllTextAsync(Path.Combine(fixture.Path, "result.json"));
+        output.ShouldContain("Program.cs");
+        output.ShouldContain("Properties/launchSettings.json");
+        output.ShouldNotContain("README.md");
+    }
+
+    [Theory]
+    [InlineData("Program.cs ,   Properties")]
+    [InlineData("  Program.cs  ,   Properties  ")]
+    [InlineData("Program.cs,, Properties")]
+    public async Task Cli_IncludePatternsTrimWhitespaceAroundCommaSeparatedValues(string includePatterns)
+    {
+        using var fixture = new TemporaryDirectory();
+        await File.WriteAllTextAsync(Path.Combine(fixture.Path, "Program.cs"), "class Program {}");
+        Directory.CreateDirectory(Path.Combine(fixture.Path, "Properties"));
+        await File.WriteAllTextAsync(Path.Combine(fixture.Path, "Properties", "launchSettings.json"), "{}");
+        await File.WriteAllTextAsync(Path.Combine(fixture.Path, "README.md"), "readme");
+        var outputPath = Path.Combine(fixture.Path, "result.json");
+
+        var result = await RunCliInDirectoryAsync(
+            fixture.Path,
+            "--include", includePatterns,
+            "--format", "json",
+            "--output", outputPath);
+
+        result.ExitCode.ShouldBe(0, result.StandardError);
+        var output = await File.ReadAllTextAsync(outputPath);
+        output.ShouldContain("Program.cs");
+        output.ShouldContain("Properties/launchSettings.json");
+        output.ShouldNotContain("README.md");
     }
 
     [Fact]

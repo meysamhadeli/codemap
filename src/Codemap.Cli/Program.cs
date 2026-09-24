@@ -8,7 +8,7 @@ const string PackConfigurationTemplate = """
 {
 	"outputPath": "codemap-output.md",
 	"format": "markdown",
-	"outputMode": "file",
+	"outputMode": "clipboard",
 	"copyToClipboard": false,
 	"includeFileSummary": true,
 	"includeDirectoryStructure": true,
@@ -26,9 +26,8 @@ const string PackConfigurationTemplate = """
 """;
 
 var arguments = args.ToList();
-if (arguments.Count >= 2
-	&& arguments[0].Equals("config", StringComparison.OrdinalIgnoreCase)
-	&& arguments[1].Equals("save", StringComparison.OrdinalIgnoreCase))
+if (arguments.Count >= 1
+	&& arguments[0].Equals("config", StringComparison.OrdinalIgnoreCase))
 {
 	var configOutputPath = GetUserConfigPath();
 	await SaveConfigurationAsync(configOutputPath, arguments);
@@ -81,19 +80,15 @@ var root = Directory.GetCurrentDirectory();
 var patchMode = HasFlag(arguments, "--patch", "-p");
 var outputModeOption = GetOption(arguments, "--output-mode");
 var outputMode = ParseOutputMode(outputModeOption);
+var patchDefaultsToStdout = patchMode
+	&& outputCommand is "file"
+	&& outputModeOption is null
+	&& !HasFlag(arguments, "--stdout", "--clipboard");
 var skillSpecifications = GetOptions(arguments, "--skills", "-s");
 var remote = GetOption(arguments, "--remote", "-r");
 var configPath = GetUserConfigPath();
 var include = GetOption(arguments, "--include", "-i");
 var exclude = GetOption(arguments, "--exclude", "-e");
-var configTemplatePath = GetOption(arguments, "--config-template");
-
-if (configTemplatePath is not null)
-{
-	await File.WriteAllTextAsync(configTemplatePath, PackConfigurationTemplate);
-	Console.WriteLine($"Created configuration template at {configTemplatePath}.");
-	return 0;
-}
 
 var options = new PackOptions
 {
@@ -131,6 +126,10 @@ try
 	if (File.Exists(configPath))
 	{
 		options = (await PackConfiguration.LoadAsync(configPath)).ApplyTo(options);
+	}
+	if (patchDefaultsToStdout)
+	{
+		options = options with { OutputMode = OutputMode.Stdout };
 	}
 
 	options = options with
@@ -242,7 +241,7 @@ static async Task SaveConfigurationAsync(string path, IReadOnlyList<string> argu
 	var sourcePath = GetUserConfigPath();
 	var configuration = sourcePath is not null && File.Exists(sourcePath)
 		? JsonNode.Parse(await File.ReadAllTextAsync(sourcePath)) as JsonObject ?? new JsonObject()
-		: new JsonObject();
+		: JsonNode.Parse(PackConfigurationTemplate)!.AsObject();
 
 	SetString(configuration, "outputPath", GetOption(arguments, "--output", "-o"));
 	SetString(configuration, "format", GetOption(arguments, "--format", "-f") is { } format ? ParseFormat(format).ToString() : null);
@@ -328,7 +327,11 @@ static IReadOnlyList<string> GetOptions(IReadOnlyList<string> arguments, params 
 		.Select(item => arguments[item.index + 1])
 		.ToArray();
 
-static IReadOnlyList<string> SplitPatterns(string value) => value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+static IReadOnlyList<string> SplitPatterns(string value) => value
+	.Split(',', StringSplitOptions.RemoveEmptyEntries)
+	.Select(pattern => pattern.Trim())
+	.Where(pattern => pattern.Length > 0)
+	.ToArray();
 
 static int? GetIntOption(IReadOnlyList<string> arguments, params string[] names)
 {
@@ -361,7 +364,8 @@ static OutputMode ParseOutputMode(string? value) => value?.ToLowerInvariant() sw
 {
 	"stdout" => OutputMode.Stdout,
 	"clipboard" => OutputMode.Clipboard,
-	_ => OutputMode.File
+	"file" => OutputMode.File,
+	_ => OutputMode.Clipboard
 };
 
 static void PrintHelp()
@@ -372,7 +376,7 @@ static void PrintHelp()
 	Console.WriteLine("  codemap [options]");
 	Console.WriteLine("  codemap stdout [options]       Print packed content to stdout");
 	Console.WriteLine("  codemap clipboard [options]    Copy packed content to clipboard");
-	Console.WriteLine("  codemap config save [options]  Save options for future commands");
+	Console.WriteLine("  codemap config [options]       Save global options for future commands");
 	Console.WriteLine();
 	Console.WriteLine("Source:");
 	Console.WriteLine("  -r, --remote <url|owner/repo> Clone a remote Git repository");
@@ -399,7 +403,6 @@ static void PrintHelp()
 	Console.WriteLine("  --split-output <bytes>        Split large output into numbered files");
 	Console.WriteLine("  -p, --patch                   Add patch-generation instructions in selected format");
 	Console.WriteLine("  -s, --skills <names|paths>     Load named or explicit Skills; comma-separated");
-	Console.WriteLine("  --config-template <path>      Create a ready-to-edit configuration file");
 	Console.WriteLine();
 	Console.WriteLine("Transformations and limits:");
 	Console.WriteLine("  --security-check              Exclude files with DevSkim findings");

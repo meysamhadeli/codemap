@@ -6,6 +6,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Rel
 
 ## Unreleased
 
+### Changed
+
+- Made `codemap config` the only configuration writer; it creates the global `%USERPROFILE%/.codemap/codemap.json` file with defaults and ignores repository config files.
+- DevSkim findings are redacted as `***`; security findings no longer remove files from output.
+- Changed the default output mode from file to clipboard; file output remains available with `--output-mode file`.
+
 ### Added
 
 - Initial codemap core, CLI, output formats, filtering, transformations, and tests.

@@ -17,7 +17,7 @@ public sealed class CodePacker
             throw new DirectoryNotFoundException($"Root directory does not exist: {root}");
         }
 
-        var files = new List<PackedFile>();
+        var sourceFiles = new List<(string RelativePath, string Content)>();
         var sourcePaths = new List<string>();
         var enumerationOptions = new EnumerationOptions
         {
@@ -46,27 +46,46 @@ public sealed class CodePacker
             }
 
             sourcePaths.Add(relativePath);
-            content = Transform(content, options);
-            var lineCount = content.Length == 0 ? 0 : content.Split('\n').Length;
-            files.Add(new PackedFile(relativePath, content, content.Length, lineCount, TokenCounter.Count(content)));
+            sourceFiles.Add((relativePath, content));
         }
 
         var git = new GitMetadata();
         var gitDiffs = options.IncludeGitDiffs ? await git.RunAsync(root, "diff", cancellationToken) : null;
         var gitLogs = options.IncludeGitLogs ? await git.RunAsync(root, $"log -n {options.GitLogCount} --oneline", cancellationToken) : null;
-        var secrets = options.EnableSecurityCheck
+        var security = options.EnableSecurityCheck
             ? await new SecurityScanner().ScanAsync(root, sourcePaths, cancellationToken)
-            : [];
-        if (secrets.Count > 0) files = files.Where(file => !secrets.Contains(file.RelativePath, StringComparer.OrdinalIgnoreCase)).ToList();
+            : new SecurityScanResult([], new Dictionary<string, IReadOnlyList<SecurityRedaction>>());
+        var files = sourceFiles
+            .Select(file =>
+            {
+                var content = security.Redactions.TryGetValue(file.RelativePath, out var redactions)
+                    ? Redact(file.Content, redactions)
+                    : file.Content;
+                content = Transform(content, options);
+                var lineCount = content.Length == 0 ? 0 : content.Split('\n').Length;
+                return new PackedFile(file.RelativePath, content, content.Length, lineCount, TokenCounter.Count(content));
+            })
+            .ToList();
 
-        var contentOutput = Render(files, options, gitDiffs, gitLogs, secrets);
-        var result = new PackResult(files, contentOutput, contentOutput.Length, TokenCounter.Count(contentOutput), gitDiffs, gitLogs, secrets);
+        var contentOutput = Render(files, options, gitDiffs, gitLogs, security.ExcludedFiles);
+        var result = new PackResult(files, contentOutput, contentOutput.Length, TokenCounter.Count(contentOutput), gitDiffs, gitLogs, security.ExcludedFiles);
         if (options.TokenBudget is { } budget && result.EstimatedTokenCount > budget)
         {
             throw new InvalidOperationException($"Packed output exceeds token budget of {budget}.");
         }
 
         return result;
+    }
+
+    private static string Redact(string content, IReadOnlyList<SecurityRedaction> redactions)
+    {
+        foreach (var redaction in redactions.OrderByDescending(redaction => redaction.Index))
+        {
+            if (redaction.Index < 0 || redaction.Index + redaction.Length > content.Length) continue;
+            content = content.Remove(redaction.Index, redaction.Length).Insert(redaction.Index, "***");
+        }
+
+        return content;
     }
 
     private static bool IsIncluded(string relativePath, PackOptions options)

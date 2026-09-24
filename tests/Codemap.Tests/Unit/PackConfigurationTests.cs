@@ -5,6 +5,14 @@ namespace Codemap.Tests;
 public sealed class PackConfigurationTests
 {
     [Fact]
+    public void PackOptions_DefaultsToClipboardOutput()
+    {
+        var options = new PackOptions { RootDirectory = Path.GetTempPath() };
+
+        options.OutputMode.ShouldBe(OutputMode.Clipboard);
+    }
+
+    [Fact]
     public async Task LoadAsync_ReadsJsonAndApplyToPreservesUnsetDefaults()
     {
         using var fixture = new TemporaryDirectory();

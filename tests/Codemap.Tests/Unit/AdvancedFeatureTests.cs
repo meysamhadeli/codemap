@@ -20,7 +20,7 @@ public sealed class AdvancedFeatureTests
     }
 
     [Fact]
-    public async Task PackAsync_ExcludesFilesWithDevSkimFindings()
+    public async Task PackAsync_RedactsNonSecretDevSkimFindingsWithoutExcludingFile()
     {
         using var fixture = new TemporaryDirectory();
         await File.WriteAllTextAsync(Path.Combine(fixture.Path, "unsafe.cs"), "var hash = new MD5CryptoServiceProvider();\n");
@@ -32,8 +32,31 @@ public sealed class AdvancedFeatureTests
             EnableSecurityCheck = true
         });
 
-        result.Files.Select(file => file.RelativePath).ShouldBe(new[] { "safe.cs" });
-        result.ExcludedFiles.ShouldContain("unsafe.cs");
+        result.Files.Select(file => file.RelativePath).ShouldBe(new[] { "safe.cs", "unsafe.cs" });
+        result.Files.Single(file => file.RelativePath == "unsafe.cs").Content.ShouldContain("***");
+        result.Files.Single(file => file.RelativePath == "unsafe.cs").Content.ShouldNotContain("MD5CryptoServiceProvider");
+        result.ExcludedFiles.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public async Task PackAsync_RedactsDevSkimTokenFindingsWithoutExcludingFile()
+    {
+        using var fixture = new TemporaryDirectory();
+        const string secret = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+        await File.WriteAllTextAsync(Path.Combine(fixture.Path, "settings.cs"), $"// offset before secret\nvar key = \"{secret}\";\n");
+
+        var result = await new CodePacker().PackAsync(new PackOptions
+        {
+            RootDirectory = fixture.Path,
+            EnableSecurityCheck = true,
+            RemoveComments = true
+        });
+
+        result.Files.ShouldHaveSingleItem();
+        result.Files[0].Content.ShouldContain("***");
+        result.Files[0].Content.ShouldNotContain(secret);
+        result.Files[0].Content.ShouldNotContain("offset before secret");
+        result.ExcludedFiles.ShouldBeEmpty();
     }
 
     private sealed class TemporaryDirectory : IDisposable

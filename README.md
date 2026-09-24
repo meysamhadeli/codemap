@@ -29,11 +29,9 @@ Running `codemap` without options scans the current directory. Change into the r
 > [!TIP]
 > **Quick Start**
 >
-> - **Save a snapshot:** `codemap --format markdown --output repository.md`
-> - **Print without a file:** `codemap --stdout --format markdown`
-> - **Copy to clipboard:** `codemap --clipboard --format markdown`
-> - **Generate patch context:** `codemap --stdout --patch` or `codemap -p`
-> - **Preview and apply a patch:** `codemap --apply changes.patch` or `codemap -a changes.patch`
+> - **Include selected paths:** `codemap -i "src,tests" -e "**/bin/**,**/obj/**"`
+> - **Generate patch context:** `codemap -p`
+> - **Preview and apply a patch:** `codemap -a changes.patch`
 
 The usual AI-assisted workflow is:
 
@@ -52,7 +50,7 @@ Codemap produces context. It does not execute AI output, run Skill instructions,
 | 📤 | Output destinations | Writes to a file, stdout, or the system clipboard. |
 | 🩹 | Patch workflow | Generates patch instructions and safely previews, validates, and applies Git diffs. |
 | 🧠 | Skill loading | Adds named or explicit project and user Skills as read-only context. |
-| 🛡️ | Security scanning | Optionally uses DevSkim to exclude files with actionable findings. |
+| 🛡️ | Security scanning | Optionally uses DevSkim to redact every detected security finding as `***`. |
 | 🔢 | Token accounting | Reports per-file and total `cl100k_base` token counts. |
 | 📏 | Output limits | Enforces file-size and token budgets and can split large output. |
 | 🌐 | Remote repositories | Clones and packs a Git repository or selected branch. |
@@ -70,7 +68,7 @@ codemap's main workflow is simple: choose a source directory, select an output f
 Use the built-in help whenever you need to check available commands and options:
 
 ```bash
-codemap --help
+codemap -h
 ```
 
 ### 🔀 Include and Exclude
@@ -79,29 +77,29 @@ Use `--include` to select files and `--exclude` to remove paths from that select
 
 ```bash
 codemap \
-	--include "src/**/*.cs,README.md" \
-	--exclude "**/bin/**,**/obj/**" \
-	--format markdown \
-	--output source-context.md
+	-i "src/**/*.cs,README.md" \
+	-e "**/bin/**,**/obj/**" \
+	-f markdown \
+	-o source-context.md
 ```
 
 Both options accept individual files, folders, comma-separated values, and glob patterns:
 
 ```bash
 # One file and one folder, including all files below the folder
-codemap --include "README.md,src"
+codemap -i "README.md,src"
 
 # Every C# file, except generated files and build folders
-codemap --include "**/*.cs" --exclude "**/*.generated.cs,**/bin/**,**/obj/**"
+codemap -i "**/*.cs" -e "**/*.generated.cs,**/bin/**,**/obj/**"
 
 # Match a file name in any folder
-codemap --include "*.cs" --exclude "test-*.cs"
+codemap -i "*.cs" -e "test-*.cs"
 
 # Match folders anywhere in the repository; spaces after commas are allowed
-codemap --include "**/Api, **/tests" --exclude "/**/generated, **/bin"
+codemap -i "**/Api, **/tests" -e "/**/generated, **/bin"
 
 # Match everything below folders anywhere in the repository
-codemap --include "/**/Api/**" --exclude "/**/tests/**"
+codemap -i "/**/Api/**" -e "/**/tests/**"
 ```
 
 Pattern rules:
@@ -119,19 +117,18 @@ The same selection can use short aliases: `codemap -i "src/**/*.cs" -e "**/bin/*
 
 ### 🩹 Patch and Apply
 
-Generate repository context with patch-generation instructions:
+Generate repository context with patch-generation instructions. Patch mode prints to stdout automatically:
 
 ```bash
-codemap stdout --patch
-codemap stdout -p --format markdown
+codemap -p
 ```
 
-Send that context to an AI provider and ask it to return one standard unified Git diff. Save the response as `changes.patch`. Do not execute AI output as a shell script.
+Send that context to an AI provider and ask it to return one standard unified Git diff. Create a file with any name ending in `.patch`, such as `changes.patch` or `bug-fix.patch`, in the repository root and paste the AI response into it. `codemap -p` only creates context; it does not create the patch file. Do not execute AI output as a shell script.
 
 Review and apply the diff from the repository root:
 
 ```bash
-codemap --apply changes.patch
+codemap -a changes.patch
 ```
 
 The command:
@@ -149,7 +146,7 @@ Git is required for patch application. Rejecting any file cancels the operation 
 Load reusable AI instructions from a project or user Skill directory:
 
 ```bash
-codemap stdout --skills review,architecture
+codemap -s review,architecture
 ```
 
 Named Skills are searched in this order:
@@ -162,7 +159,7 @@ Named Skills are searched in this order:
 Load one exact Skill file when a deterministic path is preferred:
 
 ```bash
-codemap stdout --skills .agents/skills/review/SKILL.md
+codemap -s .agents/skills/review/SKILL.md
 ```
 
 Repeat `--skills` to load multiple names or explicit files. Use `-s` as its short alias. Skill files are read as text and never executed. Named Skills use project files before global files; explicit paths do not perform discovery.
@@ -173,14 +170,14 @@ The default format is Markdown. Use `--format` to choose another output format w
 
 ```bash
 # Human- and AI-friendly document
-codemap --format markdown --output repository.md
+codemap -f markdown -o repository.md
 
 # Structured data for another program
-codemap --format json --output repository.json
+codemap -f json -o repository.json
 
 # XML or simple text output
-codemap --format xml --output repository.xml
-codemap --format plain --output repository.txt
+codemap -f xml -o repository.xml
+codemap -f plain -o repository.txt
 ```
 
 ### 🛡️ Security Check
@@ -190,8 +187,8 @@ Use DevSkim to exclude files with actionable security findings before they enter
 ```bash
 codemap \
 	--security-check \
-	--format markdown \
-	--output reviewed-context.md
+	-f markdown \
+	-o reviewed-context.md
 ```
 
 codemap reports excluded files in the terminal. Node.js and npm are not required.
@@ -202,10 +199,10 @@ codemap can clone a repository and pack a selected branch:
 
 ```bash
 codemap \
-	--remote microsoft/generative-ai-for-beginners \
-	--remote-branch main \
-	--format markdown \
-	--output remote-context.md
+	-r microsoft/generative-ai-for-beginners \
+	-b main \
+	-f markdown \
+	-o remote-context.md
 ```
 
 The same command accepts a complete Git URL. Git must be installed and available on `PATH` for remote repositories and Git metadata.
@@ -218,10 +215,10 @@ Create a focused Markdown snapshot and send it to an AI tool with a specific req
 
 ```bash
 codemap \
-	--include "src/**/*.cs,tests/**/*.cs,README.md" \
-	--exclude "**/bin/**,**/obj/**" \
-	--format markdown \
-	--output review-context.md
+	-i "src/**/*.cs,tests/**/*.cs,README.md" \
+	-e "**/bin/**,**/obj/**" \
+	-f markdown \
+	-o review-context.md
 ```
 
 Example request:
@@ -251,10 +248,6 @@ codemap --help
 
 | Command or option | Alias | Value | Description |
 | --- | --- | --- | --- |
-| `codemap [options]` | - | - | Pack the current directory into the configured output. |
-| `codemap stdout [options]` | - | - | Write packed output to standard output. |
-| `codemap clipboard [options]` | - | - | Copy packed output to the clipboard. |
-| `codemap config save [options]` | - | - | Save only supplied options into a persistent configuration. |
 | `--include` | `-i` | comma-separated globs | Include only matching paths. |
 | `--exclude` | `-e` | comma-separated globs | Add exclusion patterns for this run. |
 | `--format` | `-f` | `xml`, `markdown`, `md`, `json`, `plain`, `txt` | Output format. Defaults to Markdown. |
@@ -271,7 +264,6 @@ codemap --help
 | `--skills` | `-s` | comma-separated names or paths | Load named or explicit Skills. Repeat to load multiple values. |
 | `--watch` | `-w` | flag | Watch a directory and report changes. |
 | `--version` | `-v` | flag | Show the tool version. |
-| `--config-template` | - | path | Create a ready-to-edit configuration JSON file. |
 | `--help` | `-h` | flag | Show command usage, options, and examples. |
 | `--remote` | `-r` | URL or `owner/repository` | Clone a remote Git repository into a temporary directory before packing. |
 | `--remote-branch` | `-b` | branch | Branch to clone when using `--remote`. |
@@ -317,10 +309,10 @@ Configuration uses JSON. codemap loads one global configuration file for every s
 | Linux | `~/.codemap/codemap.json` |
 | macOS | `~/.codemap/codemap.json` |
 
-Save CLI overrides into the global configuration. If the file does not exist, this command creates it. Only supplied options change; existing settings are preserved:
+Create or update the global configuration. If the file does not exist, `codemap config` creates the `.codemap` directory and a configuration with default values. Only supplied options change; existing settings are preserved:
 
 ```bash
-codemap config save \
+codemap config \
 	--removeComments true \
 	--removeEmptyLines true \
 	--enableSecurityCheck true \
@@ -330,23 +322,23 @@ codemap config save \
 Boolean values use explicit `true` or `false` values when saving configuration. For example:
 
 ```bash
-codemap config save \
+codemap config \
 	--max-file-size 500000 \
 	--token-budget 12000 \
 	--includeGitDiffs false
 ```
 
-`config save` always updates the global configuration file, which later commands load automatically:
+`config` always updates the global configuration file, which later commands load automatically:
 
 ```bash
-codemap config save \
+codemap config \
 	--include "src, tests" --exclude "**/bin/**, **/obj/**"
 ```
 
 For example:
 
 ```bash
-codemap config save \
+codemap config \
 	--copyToClipboard true \
 	--includeGitLogs true \
 	--include-logs-count 10
@@ -354,10 +346,10 @@ codemap config save \
 
 The global file uses this same path on every platform.
 
-Choose the default output destination with `outputMode`. The default is `file`:
+Choose the default output destination with `outputMode`. The default is `clipboard`:
 
 ```bash
-codemap config save --output-mode stdout
+codemap config --output-mode stdout
 ```
 
 Valid values are `file`, `stdout`, and `clipboard`. Explicit `--stdout`, `--clipboard`, or `stdout`/`clipboard` commands override the configured mode for one run.
@@ -366,7 +358,7 @@ Valid values are `file`, `stdout`, and `clipboard`. Explicit `--stdout`, `--clip
 {
 	"outputPath": "artifacts/repository.md",
 	"format": "Markdown",
-	"outputMode": "file",
+	"outputMode": "clipboard",
 	"copyToClipboard": true,
 	"includeFileSummary": true,
 	"includeDirectoryStructure": true,

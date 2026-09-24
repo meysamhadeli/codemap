@@ -5,10 +5,10 @@ namespace Codemap.Core;
 
 public sealed class SecurityScanner
 {
-    public async Task<IReadOnlyList<string>> ScanAsync(string rootDirectory, IEnumerable<string> relativePaths, CancellationToken cancellationToken = default)
+    public async Task<SecurityScanResult> ScanAsync(string rootDirectory, IEnumerable<string> relativePaths, CancellationToken cancellationToken = default)
     {
         var paths = relativePaths.ToArray();
-        if (paths.Length == 0) return [];
+        if (paths.Length == 0) return new SecurityScanResult([], new Dictionary<string, IReadOnlyList<SecurityRedaction>>());
 
         var processor = new DevSkimRuleProcessor(
             DevSkimRuleSet.GetDefaultRuleSet(),
@@ -18,7 +18,7 @@ public sealed class SecurityScanner
                 ConfidenceFilter = Confidence.High | Confidence.Medium | Confidence.Low,
                 EnableSuppressions = true
             });
-        var findings = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var redactions = new Dictionary<string, IReadOnlyList<SecurityRedaction>>(StringComparer.OrdinalIgnoreCase);
 
         foreach (var relativePath in paths)
         {
@@ -27,9 +27,27 @@ public sealed class SecurityScanner
             if (!File.Exists(fullPath)) continue;
 
             var content = await File.ReadAllTextAsync(fullPath, cancellationToken);
-            if (processor.Analyze(content, relativePath).Any(issue => !issue.IsSuppressionInfo)) findings.Add(relativePath);
+            var issues = processor.Analyze(content, relativePath)
+                .Where(issue => !issue.IsSuppressionInfo)
+                .ToArray();
+            if (issues.Length == 0) continue;
+
+            var issueRedactions = issues
+                .Select(issue => new SecurityRedaction(issue.Boundary.Index, issue.Boundary.Length))
+                .Where(redaction => redaction.Length > 0)
+                .ToArray();
+            if (issueRedactions.Length > 0)
+            {
+                redactions[relativePath] = issueRedactions;
+            }
         }
 
-        return findings.ToArray();
+        return new SecurityScanResult([], redactions);
     }
 }
+
+public sealed record SecurityRedaction(int Index, int Length);
+
+public sealed record SecurityScanResult(
+    IReadOnlyList<string> ExcludedFiles,
+    IReadOnlyDictionary<string, IReadOnlyList<SecurityRedaction>> Redactions);
