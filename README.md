@@ -12,6 +12,7 @@
 - [Command reference](#command-reference)
 - [Configuration](#configuration)
 - [Advanced capabilities](#advanced-capabilities)
+- [Support](#support)
 - [Contribution](#contribution)
 
 ## Installation
@@ -402,6 +403,14 @@ Token counts help estimate how much context an AI tool will receive. codemap rep
 ### 🔄 Workflow
 
 Use `--remote` when the repository is not available locally; codemap clones it into a temporary directory and packs the selected branch. For repository history, `--include-diffs` adds current changes and `--include-logs` adds recent commits. `--watch` monitors a local source tree and reports changes so you can run codemap again.
+
+# Support
+
+If you like my work, feel free to:
+
+- ⭐ this repository. And we will be happy together :)
+
+Thanks a bunch for supporting me!
 
 ## 🤝 Contribution
 
